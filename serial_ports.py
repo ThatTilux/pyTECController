@@ -3,8 +3,9 @@
     TODO: test whether this changes over time / on different machines
 """
 
-PORT_TOP_1 = "COM5"
-PORT_TOP_2 = "COM6"
-
-PORT_BOTTOM_1 = "COM3"
-PORT_BOTTOM_2 = "COM4"
+PORTS = {
+    "TOP_1": "COM5",
+    "TOP_2": "COM6",
+    "BOTTOM_1": "COM3",
+    "BOTTOM_2": "COM4"
+}

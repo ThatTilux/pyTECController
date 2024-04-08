@@ -3,8 +3,11 @@ Class for handling one TEC via one channel of a TEC-1161 board.
 """
 
 import logging
+from time import sleep
 from mecom import MeComSerial, ResponseException, WrongChecksum
-
+from serial.serialutil import SerialException
+from serial_ports import PORTS
+from param_limits import PARAM_LIMITS
 
 # default queries from command table below
 DEFAULT_QUERIES = [
@@ -14,6 +17,7 @@ DEFAULT_QUERIES = [
     "output current",
     "output voltage",
 ]
+
 
 # syntax
 # { display_name: [parameter_id, unit], }
@@ -25,17 +29,17 @@ COMMAND_TABLE = {
     "output voltage": [1021, "V"],
     "sink temperature": [1001, "degC"],
     "ramp temperature": [1011, "degC"],
+    "current limitation": [2030, "A"],  # max current that will be provided
+    "voltage limitation": [2031, "V"],  # max voltage that will be provided
 }
-
-MAX_COM = 256
 
 
 class MeerstetterTEC(object):
     """
-    Controlling a TEC device via serial.
+    Controlling one TEC device via serial.
     """
 
-    # class-level dictionary to hold all serial session instances indexed by port 
+    # class-level dictionary to hold all serial session instances indexed by port
     # (we need 2 instances of this class per port but only 1 session)
     _sessions = {}
 
@@ -58,6 +62,8 @@ class MeerstetterTEC(object):
         self.queries = queries
 
         self._connect()
+
+        self._set_limits()
 
     def _connect(self):
         # open session or use existing one
@@ -95,6 +101,29 @@ class MeerstetterTEC(object):
                 self.session().stop()
                 self._session = None
         return data
+
+    def _set_limits(self):
+        """
+        Sets limits for certain parameters to prevent damage to components
+        """
+        for description in PARAM_LIMITS:
+            param_id, unit, value = PARAM_LIMITS[description]
+            try:
+                # Make sure every param is in COMMAND_TABLE
+                assert param_id, unit == COMMAND_TABLE[description]
+                
+                self.session().set_parameter(
+                    parameter_id=param_id,
+                    value=value,
+                    address=self.address,
+                    parameter_instance=self.channel,
+                )
+            except (ResponseException, WrongChecksum) as ex:
+                logging.error("ERROR in setting parameter limits. Aborting.")
+                self.session().stop()
+                self._session = None
+        
+        
 
     def set_temp(self, value):
         """
@@ -136,3 +165,32 @@ class MeerstetterTEC(object):
 
     def disable(self):
         return self._set_enable(False)
+
+
+def test_connection():
+        """
+        Tests which of the specified ports can be reached.
+        """
+        for label in PORTS:
+            port = PORTS[label]
+            try:
+                mc = MeerstetterTEC(port=port)
+                mc._tearDown()
+                print(f"Port {label} is online")
+            except (SerialException) as ex:
+                print(f"Port {label} is offline")
+        
+        
+                
+
+# example code
+if __name__ == "__main__":
+    
+    
+    test_connection()
+    
+    # mc1 = MeerstetterTEC(port=PORTS["TOP_1"], channel=1)
+    # mc2 = MeerstetterTEC(port=PORTS["TOP_1"], channel=2)
+    
+    # print(mc1.get_data())
+    # print(mc2.get_data())
