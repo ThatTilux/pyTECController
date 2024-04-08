@@ -1,10 +1,10 @@
 import logging
 from time import sleep
-from meerstetter_tec import MeerstetterTEC
-from serial_ports import PORTS
+from app.meerstetter_tec import MeerstetterTEC
+from app.serial_ports import PORTS
 
 
-class PlateTECControlller:
+class PlateTECController:
     """
     Controls multiple TECs that all heat/cool the same plate
     """
@@ -30,13 +30,23 @@ class PlateTECControlller:
             id_counter += 1
         return controllers
 
+    def get_data(self):
+        """
+        Returns the data for all managed TECs
+        """
+        data = {}
+        for tec_id in self.tec_controllers:
+            tec = self.tec_controllers[tec_id]
+            data[tec_id] = tec.get_data()
+
+        return data
+
     def print_data(self, tec_id):
         """
         Prints the data of one TEC
         """
         print(self.tec_controllers[tec_id].get_data())
-    
-    
+
     def print_data_all(self):
         """
         Prints the data for all TECs.
@@ -44,24 +54,23 @@ class PlateTECControlller:
         print(f"===plate {self.label}===")
         for tec in self.tec_controllers.values():
             print(tec.get_data())
-            
+
     def set_temp_all(self, temp):
         for tec in self.tec_controllers.values():
             tec.set_temp(temp)
-            
+
     def enable_all(self):
         for tec in self.tec_controllers.values():
             tec.enable()
-            
+
     def disable_all(self):
         for tec in self.tec_controllers.values():
             tec.disable()
 
 
-
 # temporary test function
 def _print_temp(mc):
-    """TEST 
+    """TEST
     prints the temps and loop info in the console
     """
     temps = []
@@ -75,8 +84,10 @@ def _print_temp(mc):
         elif status == 2 and loop != "Not stable":
             loop = "Stable"
     avg = round(sum(temps) / len(temps), 2)
-    
-    print(f"Temps for {mc.label}: {temps[0]}, {temps[1]}, {temps[2]}, {temps[3]}, AVG: {avg}, Temp Regulation: {loop}")
+
+    print(
+        f"Temps for {mc.label}: {temps[0]}, {temps[1]}, {temps[2]}, {temps[3]}, AVG: {avg}, Temp Regulation: {loop}"
+    )
 
 
 # some example code
@@ -85,35 +96,32 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.DEBUG, format="%(asctime)s:%(module)s:%(levelname)s:%(message)s"
     )
-    
+
     # initialize both plates
-    mc_top = PlateTECControlller(label="top", ports=[PORTS["TOP_1"], PORTS["TOP_2"]])
-    mc_bottom = PlateTECControlller(label="bottom", ports=[PORTS["BOTTOM_1"], PORTS["BOTTOM_2"]])
-    
-    
+    mc_top = PlateTECController(label="top", ports=[PORTS["TOP_1"], PORTS["TOP_2"]])
+    mc_bottom = PlateTECController(
+        label="bottom", ports=[PORTS["BOTTOM_1"], PORTS["BOTTOM_2"]]
+    )
+
     mc_top.disable_all()
     mc_bottom.disable_all()
-    
+
     cont = False
-    
+
     if not cont:
         exit()
-    
-    
-    #print data
-    #mc_top.print_data_all() 
-    #mc_bottom.print_data_all() 
-    
-    # set temp 
+
+    # print data
+    # mc_top.print_data_all()
+    # mc_bottom.print_data_all()
+
+    # set temp
     mc_top.set_temp_all(35.0)
 
     mc_top.enable_all()
-    
-    
-    for i in range (0, 1000):
+
+    for i in range(0, 1000):
         _print_temp(mc_top)
         sleep(1)
-    
+
     mc_top.disable_all()
-
-

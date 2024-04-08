@@ -6,32 +6,11 @@ import logging
 from time import sleep
 from mecom import MeComSerial, ResponseException, WrongChecksum
 from serial.serialutil import SerialException
-from serial_ports import PORTS
-from param_limits import PARAM_LIMITS
-
-# default queries from command table below
-DEFAULT_QUERIES = [
-    "loop status",
-    "object temperature",
-    "target object temperature",
-    "output current",
-    "output voltage",
-]
+from app.queries import COMMAND_TABLE, DEFAULT_QUERIES
+from app.serial_ports import PORTS
+from app.param_limits import PARAM_LIMITS
 
 
-# syntax
-# { display_name: [parameter_id, unit], }
-COMMAND_TABLE = {
-    "loop status": [1200, ""],
-    "object temperature": [1000, "degC"],
-    "target object temperature": [1010, "degC"],
-    "output current": [1020, "A"],
-    "output voltage": [1021, "V"],
-    "sink temperature": [1001, "degC"],
-    "ramp temperature": [1011, "degC"],
-    "current limitation": [2030, "A"],  # max current that will be provided
-    "voltage limitation": [2031, "V"],  # max voltage that will be provided
-}
 
 
 class MeerstetterTEC(object):
