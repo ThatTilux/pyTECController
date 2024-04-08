@@ -59,7 +59,7 @@ class PlateTECControlller:
 
 
 
-
+# temporary test function
 def _print_temp(mc):
     """TEST 
     prints the temps and loop info in the console
@@ -78,6 +78,8 @@ def _print_temp(mc):
     
     print(f"Temps for {mc.label}: {temps[0]}, {temps[1]}, {temps[2]}, {temps[3]}, AVG: {avg}, Temp Regulation: {loop}")
 
+
+# some example code
 if __name__ == "__main__":
     # start logging
     logging.basicConfig(
