@@ -8,5 +8,7 @@ layout = html.Div([
         id='interval-component',
         interval=1*1000,  # 1s
         n_intervals=0
-    )
+    ),
+    html.Button("Download all data as CSV", id="btn_all_data_csv"),
+    dcc.Download(id="download-all-data-csv"),
 ])

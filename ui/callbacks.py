@@ -125,3 +125,14 @@ def register_callbacks(app):
         columns = [{"name": i, "id": i} for i in df.columns]
         data = df.to_dict("records")
         return data, columns
+    
+    @app.callback(
+        Output("download-all-data-csv", "data"),
+        [Input("btn_all_data_csv", "n_clicks"),
+        State("store-tec-data", "data")],
+        prevent_initial_call=True,
+    )
+    def download_all_data(n_clicks, store_data):
+        df = convert_store_data_to_df(store_data)
+        time = datetime.now()
+        return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
