@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Dash",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "ui.app",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "env": {
+                "FLASK_ENV": "development",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "jinja": true
+        }
+    ]
+}

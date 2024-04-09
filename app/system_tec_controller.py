@@ -1,6 +1,7 @@
 from app.plate_tec_controller import PlateTECController
 from app.serial_ports import PORTS
 import pandas as pd
+from datetime import datetime
 
 
 class SystemTECController:
@@ -57,16 +58,13 @@ class SystemTECController:
 
     def get_data(self):
         """
-        Returns a DataFrame with all the data for all TECs.
-        Indices: Plate (top/bottom), TEC_id (0-n)
+        Returns a dataframe with all the data for all TECs.
         """
         data = {}
         for label in self.controllers:
             controller = self.controllers[label]
             data[label] = controller.get_data()
             
-        # Convert dictionary to pandas df
-        # TODO: data could be given as a dataframe from lower levels in the first place
         frames = []
         for plate, plate_data in data.items():
             for tec_id, tec_data in plate_data.items():
@@ -77,6 +75,9 @@ class SystemTECController:
 
         # Concatenate all small DataFrames and set multi-index
         df = pd.concat(frames).set_index(['Plate', 'TEC']).sort_index()
+        
+        # add timestamps
+        df["timestamp"] = datetime.now()
             
         return df
 
