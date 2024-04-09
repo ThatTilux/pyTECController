@@ -2,7 +2,7 @@ import dash
 from dash import html
 from .layouts import layout
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, title="TEC Controller" ,update_title=None)
 app.layout = layout
 
 
