@@ -2,9 +2,10 @@
 This class acts as an interface between the app (SystemTECController.py) and the UI
 """
 
-from app.SystemTECController import SystemTECController
+from app.system_tec_controller import SystemTECController
 from app.serial_ports import PORTS  
 from time import time
+import pandas as pd
 
 class TECInterface:
     # Use existing data if last update was within this duration (in seconds)
@@ -17,7 +18,7 @@ class TECInterface:
             ports_bottom=[PORTS["BOTTOM_1"], PORTS["BOTTOM_2"]],
         )
         # all measurements from all TECs
-        self._data = {}
+        self._data = pd.DataFrame()
         
         # timestamp when data was last updated
         self._data_time = -1

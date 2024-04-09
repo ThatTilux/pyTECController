@@ -11,9 +11,7 @@ from app.serial_ports import PORTS
 from app.param_limits import PARAM_LIMITS
 
 
-
-
-class MeerstetterTEC(object):
+class TECController(object):
     """
     Controlling one TEC device via serial.
     """
@@ -32,7 +30,7 @@ class MeerstetterTEC(object):
         channel=1,
         queries=DEFAULT_QUERIES,
         *args,
-        **kwars
+        **kwars,
     ):
         assert channel in (1, 2)
         self.channel = channel
@@ -46,11 +44,11 @@ class MeerstetterTEC(object):
 
     def _connect(self):
         # open session or use existing one
-        if self.port in MeerstetterTEC._sessions:
-            self._session = MeerstetterTEC._sessions[self.port]
+        if self.port in TECController._sessions:
+            self._session = TECController._sessions[self.port]
         else:
             self._session = MeComSerial(serialport=self.port)
-            MeerstetterTEC._sessions[self.port] = self._session
+            TECController._sessions[self.port] = self._session
 
         # get device address
         self.address = self._session.identify()
@@ -90,7 +88,7 @@ class MeerstetterTEC(object):
             try:
                 # Make sure every param is in COMMAND_TABLE
                 assert param_id, unit == COMMAND_TABLE[description]
-                
+
                 self.session().set_parameter(
                     parameter_id=param_id,
                     value=value,
@@ -101,8 +99,6 @@ class MeerstetterTEC(object):
                 logging.error("ERROR in setting parameter limits. Aborting.")
                 self.session().stop()
                 self._session = None
-        
-        
 
     def set_temp(self, value):
         """
@@ -147,29 +143,26 @@ class MeerstetterTEC(object):
 
 
 def test_connection():
-        """
-        Tests which of the specified ports can be reached.
-        """
-        for label in PORTS:
-            port = PORTS[label]
-            try:
-                mc = MeerstetterTEC(port=port)
-                mc._tearDown()
-                print(f"Port {label} is online")
-            except (SerialException) as ex:
-                print(f"Port {label} is offline")
-        
-        
-                
+    """
+    Tests which of the specified ports can be reached.
+    """
+    for label in PORTS:
+        port = PORTS[label]
+        try:
+            mc = TECController(port=port)
+            mc._tearDown()
+            print(f"Port {label} is online")
+        except SerialException as ex:
+            print(f"Port {label} is offline")
+
 
 # example code
 if __name__ == "__main__":
-    
-    
+
     test_connection()
-    
+
     # mc1 = MeerstetterTEC(port=PORTS["TOP_1"], channel=1)
     # mc2 = MeerstetterTEC(port=PORTS["TOP_1"], channel=2)
-    
+
     # print(mc1.get_data())
     # print(mc2.get_data())

@@ -1,5 +1,6 @@
-from app.PlateTECController import PlateTECController
+from app.plate_tec_controller import PlateTECController
 from app.serial_ports import PORTS
+import pandas as pd
 
 
 class SystemTECController:
@@ -56,13 +57,28 @@ class SystemTECController:
 
     def get_data(self):
         """
-        Returns the data for all TECs.
+        Returns a DataFrame with all the data for all TECs.
+        Indices: Plate (top/bottom), TEC_id (0-n)
         """
         data = {}
         for label in self.controllers:
             controller = self.controllers[label]
             data[label] = controller.get_data()
-        return data
+            
+        # Convert dictionary to pandas df
+        # TODO: data could be given as a dataframe from lower levels in the first place
+        frames = []
+        for plate, plate_data in data.items():
+            for tec_id, tec_data in plate_data.items():
+                df = pd.DataFrame([tec_data])
+                df['TEC'] = tec_id
+                df['Plate'] = plate
+                frames.append(df)
+
+        # Concatenate all small DataFrames and set multi-index
+        df = pd.concat(frames).set_index(['Plate', 'TEC']).sort_index()
+            
+        return df
 
     def get_temps_avg(self, plate):
         assert plate in ["top", "bottom"]

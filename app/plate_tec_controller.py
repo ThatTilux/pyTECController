@@ -1,6 +1,6 @@
 import logging
 from time import sleep
-from app.meerstetter_tec import MeerstetterTEC
+from app.tec_controller import TECController
 from app.serial_ports import PORTS
 
 
@@ -24,9 +24,9 @@ class PlateTECController:
         id_counter = 0
         for port in ports:
             # Use both channels
-            controllers[id_counter] = MeerstetterTEC(channel=1, port=port)
+            controllers[id_counter] = TECController(channel=1, port=port)
             id_counter += 1
-            controllers[id_counter] = MeerstetterTEC(channel=2, port=port)
+            controllers[id_counter] = TECController(channel=2, port=port)
             id_counter += 1
         return controllers
 
