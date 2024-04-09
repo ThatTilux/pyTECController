@@ -66,14 +66,14 @@ class TECController(object):
     def get_data(self):
         data = {}
         for description in self.queries:
-            id, unit = COMMAND_TABLE[description]
+            id, _ = COMMAND_TABLE[description]
             try:
                 value = self.session().get_parameter(
                     parameter_id=id,
                     address=self.address,
                     parameter_instance=self.channel,
                 )
-                data.update({description: (value, unit)})
+                data.update({description: value})
             except (ResponseException, WrongChecksum) as ex:
                 self.session().stop()
                 self._session = None
