@@ -7,6 +7,7 @@ from dash import dcc
 import pandas as pd
 from tec_interface import TECInterface
 from ui.components.graphs import (
+    format_timestamps,
     update_graph_object_temperature,
     update_graph_output_current,
     update_graph_output_voltage,
@@ -70,12 +71,56 @@ def get_data_from_store(store_data, most_recent=True):
         return df
 
 
-def update_table(df):
+def update_table(_df):
     """
     Updates the current measurements in the table
     """
-    # Preparing data for the DataTable
-    columns = [{"name": i, "id": i} for i in df.columns]
+    # create a deep copy as the df is significantly manipulated here
+    df = _df.copy(deep=True)
+
+    # Columns to round with the decimal number
+    columns_to_round = [
+        ("object temperature", 2),
+        ("output current", 4),
+        ("output voltage", 4),
+    ]
+
+    # Round specified columns
+    for col, decimal in columns_to_round:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: f"{x:.{decimal}f}")
+    
+    
+    # custom labels
+    column_labels = {
+        "loop status": "Status",
+        "object temperature": "Temperature (°C)",
+        "target object temperature": "Target (°C)",
+        "output current": "Current (A)",
+        "output voltage": "Voltage (V)",
+        "timestamp": "Time",
+    }
+    
+    # Parse the loop status
+    # Function to determine the loop status based on conditions
+    def determine_status(row):
+        if row['loop status'] == 0:
+            return 'Inactive'
+        elif row['loop status'] == 1:
+            if row['output current'] <= 0:
+                return 'Heating'
+            else:
+                return 'Cooling'
+        elif row['loop status'] == 2:
+            return 'Stable'
+        else:
+            return 'Unknown'  
+
+    # Apply the function to each row
+    df['loop status'] = df.apply(determine_status, axis=1)
+
+    # Preparing columns for the DataTable with updated labels
+    columns = [{"name": column_labels.get(i, i), "id": i} for i in df.columns]
     data = df.to_dict("records")
     return data, columns
 
@@ -85,10 +130,10 @@ def _convert_timestamps(df):
     Converts the timestamps into the datetime format and adds 2 hours for the time zone.
     """
     # convert Timestamp is a datetime type
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit="ms")
-    
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+
     # Adding 2 hours to each timestamp
-    df['timestamp'] = df['timestamp'] + pd.Timedelta(hours=2)
+    df["timestamp"] = df["timestamp"] + pd.Timedelta(hours=2)
 
 
 # all callbacks inside this function
@@ -139,9 +184,11 @@ def register_callbacks(app):
     def update_components_from_store(store_data):
         df_recent = get_data_from_store(store_data, most_recent=True)
         df_all = get_data_from_store(store_data, most_recent=False)
-        
+
         _convert_timestamps(df_recent)
         _convert_timestamps(df_all)
+
+        format_timestamps(df_recent)
 
         table_data, table_columns = update_table(df_recent)
 

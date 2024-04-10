@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 
 
+
 def graphs():
     return html.Div(
         [
@@ -22,14 +23,13 @@ def graphs():
     )
 
 
-
-def _format_timestamps(df):
+def format_timestamps(df):
     """
     Formats timestamps tp the hh:mm:ss format
     """
     df['timestamp'] = df['timestamp'].dt.strftime('%H:%M:%S')
-    
-    return df
+
+
 
 def _force_two_ticks(fig, first_timestamp, last_timestamp):
     """
@@ -48,7 +48,7 @@ def update_graph_object_temperature(df):
     avg_temps = df.groupby(['Plate', 'timestamp'])["object temperature"].mean().reset_index()
     
     # Format the Timestamp to hh:mm:ss
-    avg_temps = _format_timestamps(avg_temps)
+    format_timestamps(avg_temps)
 
     
     fig = px.line(
@@ -105,7 +105,7 @@ def update_graph_output_current(df):
     result_df = pd.DataFrame(results)
     
     # format timestamps 
-    result_df = _format_timestamps(result_df)
+    format_timestamps(result_df)
     
     
     fig = px.line(
@@ -141,7 +141,7 @@ def update_graph_output_voltage(df):
     max_voltages = grouped_by_timestamp['output voltage'].max().reset_index()
     
     # format timestamps 
-    max_voltages = _format_timestamps(max_voltages)
+    format_timestamps(max_voltages)
     
     fig = px.line(
         max_voltages,

@@ -35,5 +35,5 @@ def download_accordion():
             )
         ],
         start_collapsed=True,
-        class_name="mt-3"
+        class_name="mt-3 mb-3"
     )
