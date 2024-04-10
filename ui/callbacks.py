@@ -2,6 +2,7 @@ from datetime import datetime
 from io import StringIO
 import json
 from time import sleep
+import dash
 from dash.dependencies import Output, Input, State
 from dash import dcc
 import pandas as pd
@@ -134,6 +135,17 @@ def _convert_timestamps(df):
 
     # Adding 2 hours to each timestamp
     df["timestamp"] = df["timestamp"] + pd.Timedelta(hours=2)
+    
+
+def _is_graph_paused(n_clicks):
+    """
+    Determines whether the graphs are paused based on the number of clicks of the Pause Graphs btn.
+    """
+    
+    if n_clicks is None:
+        return False
+    
+    return n_clicks % 2 == 1
 
 
 # all callbacks inside this function
@@ -179,18 +191,27 @@ def register_callbacks(app):
             Output("graph-output-current", "figure"),
             Output("graph-output-voltage", "figure"),
         ],
-        [Input("store-tec-data", "data")],
+        [Input("store-tec-data", "data"), State("btn-pause-graphs", "n_clicks")],
     )
-    def update_components_from_store(store_data):
+    def update_components_from_store(store_data, n_clicks):
+        # Update table
         df_recent = get_data_from_store(store_data, most_recent=True)
+        
+        _convert_timestamps(df_recent)
+        
+        format_timestamps(df_recent)
+        
+        table_data, table_columns = update_table(df_recent)
+        
+        # If graphs are not paused, update them as well
+        if _is_graph_paused(n_clicks):
+            return (table_data, table_columns, dash.no_update, dash.no_update, dash.no_update)
+        
+        # Update graphs
+        
         df_all = get_data_from_store(store_data, most_recent=False)
 
-        _convert_timestamps(df_recent)
         _convert_timestamps(df_all)
-
-        format_timestamps(df_recent)
-
-        table_data, table_columns = update_table(df_recent)
 
         graph_object_temp = update_graph_object_temperature(df_all)
         graph_output_current = update_graph_output_current(df_all)
@@ -222,3 +243,13 @@ def register_callbacks(app):
 
         time = datetime.now()
         return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
+    
+    @app.callback(
+        Output("btn-pause-graphs", "children"),
+        [Input("btn-pause-graphs", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def handle_pause_graphs(n_clicks):
+        btn_label = "Resume Graphs" if _is_graph_paused(n_clicks) else "Freeze Graphs"
+        
+        return btn_label 

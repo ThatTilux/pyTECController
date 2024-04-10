@@ -1,13 +1,16 @@
-from dash import dash_table, html, dcc
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+
+from ui.components.control_form import control_form
 from ui.components.data_table import data_table
 from ui.components.download_accordion import download_accordion
 from ui.components.graphs import graphs
 
 layout = dbc.Container(
     [
-        html.H1("TEC Data Display"),
+        html.H1("TEC Central Command Control"),
+        control_form(),
         data_table(),
         graphs(),
         download_accordion(),
