@@ -2,6 +2,7 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objs as go
 
 
 
@@ -47,8 +48,17 @@ def update_graph_object_temperature(df):
     # Group by Plate and Timestamp, then calculate mean
     avg_temps = df.groupby(['Plate', 'timestamp'])["object temperature"].mean().reset_index()
     
-    # Format the Timestamp to hh:mm:ss
+    
+    # reset multiindex
+    temp_df = df.reset_index()
+
+    
+     # Extract the first target temperature for each Plate at each timestamp
+    target_temps = temp_df.drop_duplicates(subset=['Plate', 'timestamp'])[['Plate', 'timestamp', 'target object temperature']]
+    
+    # Format the Timestamps to hh:mm:ss
     format_timestamps(avg_temps)
+    format_timestamps(target_temps)
 
     
     fig = px.line(
@@ -60,9 +70,23 @@ def update_graph_object_temperature(df):
             "timestamp": "Time (hh:mm:ss)",
             "object temperature": "Temperature (°C)",
         },
-        title="Average Plate Temperatures",
+        title="Average Plate Temperatures (todo color dashed)",
         markers=True
     )
+    
+    
+    
+    # Add lines for target object temperatures
+    for plate in target_temps['Plate'].unique():
+        plate_target_temps = target_temps[target_temps['Plate'] == plate]
+        fig.add_trace(go.Scatter(
+            x=plate_target_temps['timestamp'],
+            y=plate_target_temps['target object temperature'],
+            mode='lines',
+            name=f"Target Temperature ({plate})",
+            line=dict(width=2, dash='dash'), 
+            showlegend=False
+        ))
     
     # force the plot to always only have 2 ticks
     
