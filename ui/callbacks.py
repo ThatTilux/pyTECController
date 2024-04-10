@@ -6,6 +6,11 @@ from dash.dependencies import Output, Input, State
 from dash import dcc
 import pandas as pd
 from tec_interface import TECInterface
+from ui.components.graphs import (
+    update_graph_object_temperature,
+    update_graph_output_current,
+    update_graph_output_voltage,
+)
 
 _tec_interface: TECInterface = None
 
@@ -31,20 +36,6 @@ def _convert_store_data_to_df(store_data):
     df = pd.DataFrame(data_dict["data"], index=index, columns=columns)
 
     return df
-
-
-def same_timestamps(old_time, new_time):
-    """
-    Accepts an old and a new timestamp.
-    The old timestamp has to be in the format 1712681273425
-    The new timestamp has to be in the format 2024-04-09 16:47:48.683551
-    Returns True if the timestamps match.
-    """
-
-    # Convert datetime object to a Unix timestamp in milliseconds
-    new_ms = int(new_time.timestamp() * 1000)
-
-    return new_ms == old_time
 
 
 def get_data_from_store(store_data, most_recent=True):
@@ -79,6 +70,27 @@ def get_data_from_store(store_data, most_recent=True):
         return df
 
 
+def update_table(df):
+    """
+    Updates the current measurements in the table
+    """
+    # Preparing data for the DataTable
+    columns = [{"name": i, "id": i} for i in df.columns]
+    data = df.to_dict("records")
+    return data, columns
+
+
+def _convert_timestamps(df):
+    """
+    Converts the timestamps into the datetime format and adds 2 hours for the time zone.
+    """
+    # convert Timestamp is a datetime type
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit="ms")
+    
+    # Adding 2 hours to each timestamp
+    df['timestamp'] = df['timestamp'] + pd.Timedelta(hours=2)
+
+
 # all callbacks inside this function
 def register_callbacks(app):
     @app.callback(  # updates the data store
@@ -97,9 +109,9 @@ def register_callbacks(app):
             # check if the timestamp of the "new" data and most recent old data matches
             # in that case, do not append the data as we already have it
             # this happenes sometimes as TECInterface will only give new data every n second(s)
-            if same_timestamps(
-                old_time=existing_df.iloc[len(existing_df) - 1]["timestamp"],
-                new_time=df.iloc[len(df) - 1]["timestamp"],
+            if (
+                existing_df.iloc[len(existing_df) - 1]["timestamp"]
+                == df.iloc[len(df) - 1]["timestamp"]
             ):
                 return existing_store_data_json
 
@@ -114,17 +126,36 @@ def register_callbacks(app):
 
         return updated_store_data_json
 
-    @app.callback(  # handles the table
-        [Output("tec-data-table", "data"), Output("tec-data-table", "columns")],
+    @app.callback(  # handles the table and graphs
+        [
+            Output("tec-data-table", "data"),
+            Output("tec-data-table", "columns"),
+            Output("graph-object-temperature", "figure"),
+            Output("graph-output-current", "figure"),
+            Output("graph-output-voltage", "figure"),
+        ],
         [Input("store-tec-data", "data")],
     )
-    def update_table_from_store(store_data):
-        df = get_data_from_store(store_data, most_recent=True)
+    def update_components_from_store(store_data):
+        df_recent = get_data_from_store(store_data, most_recent=True)
+        df_all = get_data_from_store(store_data, most_recent=False)
+        
+        _convert_timestamps(df_recent)
+        _convert_timestamps(df_all)
 
-        # Preparing data for the DataTable
-        columns = [{"name": i, "id": i} for i in df.columns]
-        data = df.to_dict("records")
-        return data, columns
+        table_data, table_columns = update_table(df_recent)
+
+        graph_object_temp = update_graph_object_temperature(df_all)
+        graph_output_current = update_graph_output_current(df_all)
+        graph_output_voltage = update_graph_output_voltage(df_all)
+
+        return (
+            table_data,
+            table_columns,
+            graph_object_temp,
+            graph_output_current,
+            graph_output_voltage,
+        )
 
     @app.callback(
         Output("download-data-csv", "data"),

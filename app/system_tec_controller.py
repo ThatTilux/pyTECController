@@ -76,8 +76,8 @@ class SystemTECController:
         # Concatenate all small DataFrames and set multi-index
         df = pd.concat(frames).set_index(['Plate', 'TEC']).sort_index()
         
-        # add timestamps
-        df["timestamp"] = datetime.now()
+        # add timestamps (ms since last epoch)
+        df["timestamp"] = int(datetime.now().timestamp() * 1000) 
             
         return df
 
