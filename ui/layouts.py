@@ -1,14 +1,15 @@
-from dash import dash_table,html, dcc
+from dash import dash_table, html, dcc
+import dash_bootstrap_components as dbc
 
-layout = html.Div([
-    html.H1("TEC Data Display"),
-    dash_table.DataTable(id='tec-data-table'),
-    dcc.Store(id='store-tec-data'), # storing the TEC data
-    dcc.Interval(
-        id='interval-component',
-        interval=1*1000,  # 1s
-        n_intervals=0
-    ),
-    html.Button("Download all data as CSV", id="btn_all_data_csv"),
-    dcc.Download(id="download-all-data-csv"),
-])
+from ui.components.download_accordion import download_accordion
+
+layout = dbc.Container(
+    [
+        html.H1("TEC Data Display"),
+        dash_table.DataTable(id="tec-data-table"),
+        download_accordion(),
+        dcc.Download(id="download-data-csv"),
+        dcc.Store(id="store-tec-data"),  # storing the TEC data
+        dcc.Interval(id="interval-component", interval=1 * 1000, n_intervals=0),  # 1s
+    ]
+)

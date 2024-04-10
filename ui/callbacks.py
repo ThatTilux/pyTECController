@@ -17,7 +17,7 @@ def tec_interface():
     return _tec_interface
 
 
-def convert_store_data_to_df(store_data):
+def _convert_store_data_to_df(store_data):
     # Parse the JSON string into a Python dictionary
     data_dict = json.loads(store_data)
 
@@ -58,7 +58,7 @@ def get_data_from_store(store_data, most_recent=True):
         return None
 
     # convert json to df
-    df = convert_store_data_to_df(store_data)
+    df = _convert_store_data_to_df(store_data)
 
     if df.empty:
         return df
@@ -92,7 +92,7 @@ def register_callbacks(app):
         # if there is existing data, append to it. Otherwise, override it
         if existing_store_data_json:
             # convert existing data to df
-            existing_df = convert_store_data_to_df(existing_store_data_json)
+            existing_df = _convert_store_data_to_df(existing_store_data_json)
 
             # check if the timestamp of the "new" data and most recent old data matches
             # in that case, do not append the data as we already have it
@@ -125,14 +125,22 @@ def register_callbacks(app):
         columns = [{"name": i, "id": i} for i in df.columns]
         data = df.to_dict("records")
         return data, columns
-    
+
     @app.callback(
-        Output("download-all-data-csv", "data"),
-        [Input("btn_all_data_csv", "n_clicks"),
-        State("store-tec-data", "data")],
+        Output("download-data-csv", "data"),
+        [
+            Input("btn-download-csv", "n_clicks"),
+            State("checkboxes-download", "value"),
+            State("store-tec-data", "data"),
+        ],
         prevent_initial_call=True,
     )
-    def download_all_data(n_clicks, store_data):
-        df = convert_store_data_to_df(store_data)
+    def download_all_data(n_clicks, selected_options, store_data):
+        df = get_data_from_store(store_data, most_recent=False)
+
+        # only keep selected columns and the timestamp
+        selected_columns = selected_options + ["timestamp"]
+        df = df[selected_columns]
+
         time = datetime.now()
         return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
