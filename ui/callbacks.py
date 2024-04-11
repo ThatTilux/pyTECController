@@ -9,9 +9,9 @@ import pandas as pd
 from tec_interface import TECInterface
 from ui.components.graphs import (
     format_timestamps,
+    update_graph_max_current,
     update_graph_object_temperature,
-    update_graph_output_current,
-    update_graph_output_voltage,
+    update_graph_max_voltage,
 )
 
 _tec_interface: TECInterface = None
@@ -90,8 +90,7 @@ def update_table(_df):
     for col, decimal in columns_to_round:
         if col in df.columns:
             df[col] = df[col].apply(lambda x: f"{x:.{decimal}f}")
-    
-    
+
     # custom labels
     column_labels = {
         "loop status": "Status",
@@ -101,24 +100,24 @@ def update_table(_df):
         "output voltage": "Voltage (V)",
         "timestamp": "Time",
     }
-    
+
     # Parse the loop status
     # Function to determine the loop status based on conditions
     def determine_status(row):
-        if row['loop status'] == 0:
-            return 'Inactive'
-        elif row['loop status'] == 1:
-            if float(row['output current']) <= 0:
-                return 'Heating'
+        if row["loop status"] == 0:
+            return "Inactive"
+        elif row["loop status"] == 1:
+            if float(row["output current"]) <= 0:
+                return "Heating"
             else:
-                return 'Cooling'
-        elif row['loop status'] == 2:
-            return 'Stable'
+                return "Cooling"
+        elif row["loop status"] == 2:
+            return "Stable"
         else:
-            return 'Unknown'  
+            return "Unknown"
 
     # Apply the function to each row
-    df['loop status'] = df.apply(determine_status, axis=1)
+    df["loop status"] = df.apply(determine_status, axis=1)
 
     # Preparing columns for the DataTable with updated labels
     columns = [{"name": column_labels.get(i, i), "id": i} for i in df.columns]
@@ -135,16 +134,16 @@ def _convert_timestamps(df):
 
     # Adding 2 hours to each timestamp
     df["timestamp"] = df["timestamp"] + pd.Timedelta(hours=2)
-    
+
 
 def _is_graph_paused(n_clicks):
     """
     Determines whether the graphs are paused based on the number of clicks of the Pause Graphs btn.
     """
-    
+
     if n_clicks is None:
         return False
-    
+
     return n_clicks % 2 == 1
 
 
@@ -196,26 +195,32 @@ def register_callbacks(app):
     def update_components_from_store(store_data, n_clicks):
         # Update table
         df_recent = get_data_from_store(store_data, most_recent=True)
-        
+
         _convert_timestamps(df_recent)
-        
+
         format_timestamps(df_recent)
-        
+
         table_data, table_columns = update_table(df_recent)
-        
+
         # If graphs are not paused, update them as well
         if _is_graph_paused(n_clicks):
-            return (table_data, table_columns, dash.no_update, dash.no_update, dash.no_update)
-        
+            return (
+                table_data,
+                table_columns,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+            )
+
         # Update graphs
-        
+
         df_all = get_data_from_store(store_data, most_recent=False)
 
         _convert_timestamps(df_all)
 
         graph_object_temp = update_graph_object_temperature(df_all)
-        graph_output_current = update_graph_output_current(df_all)
-        graph_output_voltage = update_graph_output_voltage(df_all)
+        graph_output_current = update_graph_max_current(df_all)
+        graph_output_voltage = update_graph_max_voltage(df_all)
 
         return (
             table_data,
@@ -243,44 +248,45 @@ def register_callbacks(app):
 
         time = datetime.now()
         return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
-    
+
     @app.callback(
         Output("btn-pause-graphs", "children"),
         [Input("btn-pause-graphs", "n_clicks")],
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
     def handle_pause_graphs(n_clicks):
         btn_label = "Resume Graphs" if _is_graph_paused(n_clicks) else "Freeze Graphs"
-        
-        return btn_label 
-    
-    
+
+        return btn_label
+
     @app.callback(
-        Output("btn-stop-all-tecs", "n_clicks"), # dummy
+        Output("btn-stop-all-tecs", "n_clicks"),  # dummy
         [Input("btn-stop-all-tecs", "n_clicks")],
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
     def stop_tecs(n_clicks):
         tec_interface().disable_all_plates()
         return dash.no_update
-        
-        
+
     @app.callback(
-        Output("btn-start-tecs", "children"),# dummy
-        [Input("btn-start-tecs", "n_clicks"), State("input-top-plate", "value"), State("input-bottom-plate", "value")],
-        prevent_initial_call=True
+        Output("btn-start-tecs", "children"),  # dummy
+        [
+            Input("btn-start-tecs", "n_clicks"),
+            State("input-top-plate", "value"),
+            State("input-bottom-plate", "value"),
+        ],
+        prevent_initial_call=True,
     )
     def start_tecs(n_clicks, top_temp, bottom_temp):
         # the number input ensures that the type is int or float or None
         if top_temp is None or bottom_temp is None:
             return dash.no_update
-        
+
         top_temp = float(top_temp)
         bottom_temp = float(bottom_temp)
-        
+
         tec_interface().set_temperature("top", top_temp)
         tec_interface().set_temperature("bottom", bottom_temp)
-        
+
         tec_interface().enable_all_plates()
         return dash.no_update
-
