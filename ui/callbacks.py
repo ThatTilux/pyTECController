@@ -119,8 +119,18 @@ def update_table(_df):
     # Apply the function to each row
     df["loop status"] = df.apply(determine_status, axis=1)
 
+    # Create a 'Label' column
+    df["Label"] = (
+        df.index.get_level_values("Plate").str.upper()
+        + "_"
+        + df.index.get_level_values("TEC_ID").astype(str)
+    )
+
+    # create column odering so label is first
+    cols = ["Label"] + [col for col in df.columns if col != "Label"]
+
     # Preparing columns for the DataTable with updated labels
-    columns = [{"name": column_labels.get(i, i), "id": i} for i in df.columns]
+    columns = [{"name": column_labels.get(i, i), "id": i} for i in cols]
     data = df.to_dict("records")
     return data, columns
 

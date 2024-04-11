@@ -24,4 +24,5 @@ def data_table():
                     "color": "black",
                 },
             ],
+            style_table={'overflowX': 'auto'},  # horizontal scrolling instead of overflow
         )
