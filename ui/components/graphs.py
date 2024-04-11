@@ -32,7 +32,7 @@ def format_timestamps(df):
 
 def _force_two_ticks(fig, df):
     """
-    Force the fig to have 2 ticks only, namely the two timestamps passed
+    Force the fig to have 2 ticks only, namely the first and last timestamp
     """
     if df.empty:
         return

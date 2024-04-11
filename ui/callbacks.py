@@ -203,12 +203,15 @@ def register_callbacks(app):
         [Input("store-tec-data", "data"), State("btn-pause-graphs", "n_clicks")],
     )
     def update_components_from_store(store_data, n_clicks):
+        
         # Update table
         df_recent = get_data_from_store(store_data, most_recent=True)
 
         _convert_timestamps(df_recent)
 
         format_timestamps(df_recent)
+        
+        
 
         table_data, table_columns = update_table(df_recent)
 
