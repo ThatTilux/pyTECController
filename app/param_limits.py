@@ -8,4 +8,9 @@ PARAM_LIMITS = {
     "current limitation": [2030, "A", 9],
     "voltage limitation": [2031, "V", 10],
 }
-# TODO: temperature limitation (fixed to 68C atm)
+
+TEMP_INPUT_LIMITS = { # limits for the temperature input fields in the UI in °C
+    "max": 65,
+    "min": 0,
+    "step": 0.01 # allow 0.01 precision, not more
+}

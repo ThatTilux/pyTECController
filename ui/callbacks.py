@@ -108,7 +108,7 @@ def update_table(_df):
         if row['loop status'] == 0:
             return 'Inactive'
         elif row['loop status'] == 1:
-            if row['output current'] <= 0:
+            if float(row['output current']) <= 0:
                 return 'Heating'
             else:
                 return 'Cooling'
@@ -253,3 +253,34 @@ def register_callbacks(app):
         btn_label = "Resume Graphs" if _is_graph_paused(n_clicks) else "Freeze Graphs"
         
         return btn_label 
+    
+    
+    @app.callback(
+        Output("btn-stop-all-tecs", "n_clicks"), # dummy
+        [Input("btn-stop-all-tecs", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def stop_tecs(n_clicks):
+        tec_interface().disable_all_plates()
+        return dash.no_update
+        
+        
+    @app.callback(
+        Output("btn-start-tecs", "children"),# dummy
+        [Input("btn-start-tecs", "n_clicks"), State("input-top-plate", "value"), State("input-bottom-plate", "value")],
+        prevent_initial_call=True
+    )
+    def start_tecs(n_clicks, top_temp, bottom_temp):
+        # the number input ensures that the type is int or float or None
+        if top_temp is None or bottom_temp is None:
+            return dash.no_update
+        
+        top_temp = float(top_temp)
+        bottom_temp = float(bottom_temp)
+        
+        tec_interface().set_temperature("top", top_temp)
+        tec_interface().set_temperature("bottom", bottom_temp)
+        
+        tec_interface().enable_all_plates()
+        return dash.no_update
+
