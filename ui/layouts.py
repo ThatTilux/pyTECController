@@ -17,5 +17,5 @@ layout = dbc.Container(
         dcc.Download(id="download-data-csv"),
         dcc.Store(id="store-tec-data"),  # storing the TEC data
         dcc.Interval(id="interval-component", interval=1 * 1000, n_intervals=0),  # 1s
-    ]
+    ], class_name="pt-2"
 )
