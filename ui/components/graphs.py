@@ -62,6 +62,9 @@ def update_graph_object_temperature(df):
     
     # color map for all lines
     color_map = {"top": "red", "bottom": "blue"}
+    
+    # labels in the legend
+    label_map = {"top": "Top", "bottom": "Bottom"}
 
     
     fig = px.line(
@@ -72,12 +75,15 @@ def update_graph_object_temperature(df):
         labels={
             "timestamp": "Time (hh:mm:ss)",
             "object temperature": "Temperature (°C)",
+            "Plate": ""  # Remove the default legend title
         },
         title="Average Plate Temperatures",
         markers=True,
         color_discrete_map=color_map
     )
     
+    # add custom legend title
+    fig.for_each_trace(lambda trace: trace.update(name=label_map[trace.name]))
     
     
     # Add lines for target object temperatures
@@ -91,6 +97,16 @@ def update_graph_object_temperature(df):
             line=dict(color=color_map[plate], width=2, dash='dash'), 
             showlegend=False
         ))
+        
+    # dummy trace for target temperature indication in the legend
+    fig.add_trace(go.Scatter(
+        x=[None],  # No actual data
+        y=[None],
+        mode='lines',
+        name='Target',
+        line=dict(color='gray', width=2, dash='dash'),
+        showlegend=True
+    ))
     
     # force the plot to always only have 2 ticks
     
