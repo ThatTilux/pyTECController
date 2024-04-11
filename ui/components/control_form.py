@@ -63,7 +63,7 @@ def control_form():
                         width={"size": 4},
                     ),
                     dbc.Popover(
-                        "This only pauses the graphs, not the TECs or data logging.",
+                        "This only pauses the graphs, not the TECs, data logging or the table below.",
                         target="btn-pause-graphs",
                         body=True,
                         trigger="hover",

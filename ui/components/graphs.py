@@ -59,6 +59,9 @@ def update_graph_object_temperature(df):
     # Format the Timestamps to hh:mm:ss
     format_timestamps(avg_temps)
     format_timestamps(target_temps)
+    
+    # color map for all lines
+    color_map = {"top": "red", "bottom": "blue"}
 
     
     fig = px.line(
@@ -70,8 +73,9 @@ def update_graph_object_temperature(df):
             "timestamp": "Time (hh:mm:ss)",
             "object temperature": "Temperature (°C)",
         },
-        title="Average Plate Temperatures (todo color dashed)",
-        markers=True
+        title="Average Plate Temperatures",
+        markers=True,
+        color_discrete_map=color_map
     )
     
     
@@ -84,7 +88,7 @@ def update_graph_object_temperature(df):
             y=plate_target_temps['target object temperature'],
             mode='lines',
             name=f"Target Temperature ({plate})",
-            line=dict(width=2, dash='dash'), 
+            line=dict(color=color_map[plate], width=2, dash='dash'), 
             showlegend=False
         ))
     
