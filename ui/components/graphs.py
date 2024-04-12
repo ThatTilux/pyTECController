@@ -5,17 +5,20 @@ import plotly.express as px
 import plotly.graph_objs as go
 
 
+# remove these buttons from all graphs
+GRAPH_BUTTONS_TO_REMOVE = ['lasso2d', 'select2d', 'autoScale2d']
+
 def graphs():
     return html.Div(
         [
-            dbc.Row(dbc.Col(html.Div(dcc.Graph(id="graph-object-temperature")))),
+            dbc.Row(dbc.Col(html.Div(dcc.Graph(id="graph-object-temperature", config={'modeBarButtonsToRemove': GRAPH_BUTTONS_TO_REMOVE})))),
             dbc.Row(
                 [
                     dbc.Col(
-                        html.Div(dcc.Graph(id="graph-output-current")), width=12, md=6
+                        html.Div(dcc.Graph(id="graph-output-current", config={'modeBarButtonsToRemove': GRAPH_BUTTONS_TO_REMOVE})), width=12, md=6
                     ),  # 1 column only on md and smaller
                     dbc.Col(
-                        html.Div(dcc.Graph(id="graph-output-voltage")), width=12, md=6
+                        html.Div(dcc.Graph(id="graph-output-voltage", config={'modeBarButtonsToRemove': GRAPH_BUTTONS_TO_REMOVE})), width=12, md=6
                     ),
                 ]
             ),
