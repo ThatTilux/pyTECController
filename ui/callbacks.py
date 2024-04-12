@@ -1,14 +1,10 @@
 import base64
 from datetime import datetime
-from io import StringIO
-import io
-import json
-from time import sleep
 import dash
 from dash.dependencies import Output, Input, State
 from dash import dcc
 import pandas as pd
-from tec_interface import TECInterface
+from app.serial_ports import NUM_TECS
 from ui.components.graphs import (
     format_timestamps,
     update_graph_max_current,
@@ -17,20 +13,6 @@ from ui.components.graphs import (
 )
 from ui.data_store import get_data_from_store, get_most_recent, update_store
 
-_tec_interface: TECInterface = None
-
-
-
-
-def tec_interface():
-    global _tec_interface
-    if _tec_interface is None:
-        _tec_interface = TECInterface()
-    return _tec_interface
-
-
-
-
 
 def update_table(_df):
     """
@@ -38,7 +20,7 @@ def update_table(_df):
     """
     # create a deep copy as the df is significantly manipulated here
     df = _df.copy(deep=True)
-    
+
     _convert_timestamps(df)
 
     format_timestamps(df)
@@ -121,22 +103,14 @@ def _is_graph_paused(n_clicks):
     return n_clicks % 2 == 1
 
 
+def truncate_df(n_datapoints):
+    """
+    Truncates a dataframe to only include the last n_datapoints points
+    """
+
+
 # all callbacks inside this function
 def register_callbacks(app):
-    @app.callback(  # updates the data store
-        Output("interval-component", "n_intervals"), # dummy
-        [Input("interval-component", "n_intervals")],
-    )
-    def update_store_data(n):
-        # Fetch data from the TEC interface
-        df = tec_interface()._get_data()
-        # update the store
-        update_store(df)
-        return dash.no_update
-        
-        
-        
-
     @app.callback(  # handles the table and graphs
         [
             Output("tec-data-table", "data"),
@@ -145,19 +119,35 @@ def register_callbacks(app):
             Output("graph-output-current", "figure"),
             Output("graph-output-voltage", "figure"),
         ],
-        [Input("interval-component", "n_intervals"), State("btn-pause-graphs", "n_clicks")],
+        [
+            Input("interval-component", "n_intervals"),
+            State("btn-pause-graphs", "n_clicks"),
+        ],
     )
     def update_components_from_store(n, n_clicks):
-        
+
+        # only show this many datapoints:
+        MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
+        MAX_DP_MAX_CURRENT = NUM_TECS * 5 * 60  # 5 min
+        MAX_DP_MAX_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
+
         # get data
         df_all = get_data_from_store()
 
+        if df_all is None:
+            return (
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+            )
 
         # update table
-        df_recent = get_most_recent(df_all)
+        df_recent = df_all.tail(NUM_TECS)
         table_data, table_columns = update_table(df_recent)
 
-        # If graphs are not paused, update them as well
+        # If graphs are paused, do not update them
         if _is_graph_paused(n_clicks):
             return (
                 table_data,
@@ -169,12 +159,13 @@ def register_callbacks(app):
 
         # Update graphs
 
-
         _convert_timestamps(df_all)
 
-        graph_object_temp = update_graph_object_temperature(df_all)
-        graph_output_current = update_graph_max_current(df_all)
-        graph_output_voltage = update_graph_max_voltage(df_all)
+        graph_object_temp = update_graph_object_temperature(
+            df_all.tail(MAX_DP_OBJECT_TEMP)
+        )
+        graph_output_current = update_graph_max_current(df_all.tail(MAX_DP_MAX_CURRENT))
+        graph_output_voltage = update_graph_max_voltage(df_all.tail(MAX_DP_MAX_VOLTAGE))
 
         return (
             table_data,
@@ -211,35 +202,3 @@ def register_callbacks(app):
         btn_label = "Resume Graphs" if _is_graph_paused(n_clicks) else "Freeze Graphs"
 
         return btn_label
-
-    @app.callback(
-        Output("btn-stop-all-tecs", "n_clicks"),  # dummy
-        [Input("btn-stop-all-tecs", "n_clicks")],
-        prevent_initial_call=True,
-    )
-    def stop_tecs(n_clicks):
-        tec_interface().disable_all_plates()
-        return dash.no_update
-
-    @app.callback(
-        Output("btn-start-tecs", "children"),  # dummy
-        [
-            Input("btn-start-tecs", "n_clicks"),
-            State("input-top-plate", "value"),
-            State("input-bottom-plate", "value"),
-        ],
-        prevent_initial_call=True,
-    )
-    def start_tecs(n_clicks, top_temp, bottom_temp):
-        # the number input ensures that the type is int or float or None
-        if top_temp is None or bottom_temp is None:
-            return dash.no_update
-
-        top_temp = float(top_temp)
-        bottom_temp = float(bottom_temp)
-
-        tec_interface().set_temperature("top", top_temp)
-        tec_interface().set_temperature("bottom", bottom_temp)
-
-        tec_interface().enable_all_plates()
-        return dash.no_update

@@ -2,14 +2,22 @@
 This class acts as an interface between the app (SystemTECController.py) and the UI
 """
 
+import base64
+import io
+
+import redis
 from app.system_tec_controller import SystemTECController
 from app.serial_ports import PORTS  
-from time import time
+from time import sleep, time
 import pandas as pd
+
+from ui.callbacks import _convert_timestamps
+from ui.components.graphs import format_timestamps
+from ui.data_store import get_data_from_store, update_store
 
 class TECInterface:
     # Use existing data if last update was within this duration (in seconds)
-    _UPDATE_THRESHOLD = 1
+    _UPDATE_THRESHOLD = .3
     
     
     def __init__(self):
@@ -50,12 +58,33 @@ class TECInterface:
 
 
 
-    # TODO: methods for getting the exact data the UI needs
 
 
-# temp example code
 
+
+# this is the data aquisition program
 if __name__ == "__main__":
+    
+
+
+    r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+    REDIS_KEY = "tec-data-store"
+    r.delete(REDIS_KEY)
+
+    _last_data_timestamp = None
+    
     tec_interface = TECInterface()
     
-    print(tec_interface._get_data())
+    
+    while True:
+        time_start = time() # in seconds
+        data = tec_interface._get_data()
+        update_store(data)
+        df = get_data_from_store()
+        _convert_timestamps(df)
+        format_timestamps(df)
+        print(df)
+        sleep_time = 1 - (time() - time_start) # 1 second between each measurement
+        print(f"{sleep_time}s")
+        if sleep_time > 0:
+            sleep(sleep_time)

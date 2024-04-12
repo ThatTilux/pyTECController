@@ -3,6 +3,9 @@
     TODO: test whether this changes over time / on different machines
 """
 
+# this many TECs in total
+NUM_TECS = 8
+
 PORTS = {
     "TOP_1": "COM5",
     "TOP_2": "COM6",

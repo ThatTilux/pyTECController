@@ -15,6 +15,7 @@ layout = dbc.Container(
         graphs(),
         download_accordion(),
         dcc.Download(id="download-data-csv"),
-        dcc.Interval(id="interval-component", interval=1 * 1000, n_intervals=0),  # 1s
-    ], class_name="pt-2"
+        dcc.Interval(id="interval-component", interval=2 * 1000, n_intervals=0),  # 1s
+    ],
+    class_name="pt-2",
 )

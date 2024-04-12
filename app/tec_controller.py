@@ -2,9 +2,13 @@
 Class for handling one TEC via one channel of a TEC-1161 board.
 """
 
+import base64
+import io
 import logging
 from time import sleep
 from mecom import MeComSerial, ResponseException, WrongChecksum
+import pandas as pd
+import redis
 from serial.serialutil import SerialException
 from app.queries import COMMAND_TABLE, DEFAULT_QUERIES
 from app.serial_ports import PORTS
@@ -158,8 +162,10 @@ def test_connection():
 
 # example code
 if __name__ == "__main__":
+    pass
 
-    test_connection()
+
+    #test_connection()
 
     # mc1 = MeerstetterTEC(port=PORTS["TOP_1"], channel=1)
     # mc2 = MeerstetterTEC(port=PORTS["TOP_1"], channel=2)
