@@ -15,7 +15,7 @@ from ui.components.graphs import (
     update_graph_object_temperature,
     update_graph_max_voltage,
 )
-from ui.data_store import get_data_from_store, update_store
+from ui.data_store import get_data_from_store, get_most_recent, update_store
 
 _tec_interface: TECInterface = None
 
@@ -38,6 +38,10 @@ def update_table(_df):
     """
     # create a deep copy as the df is significantly manipulated here
     df = _df.copy(deep=True)
+    
+    _convert_timestamps(df)
+
+    format_timestamps(df)
 
     # Columns to round with the decimal number
     columns_to_round = [
@@ -143,15 +147,12 @@ def register_callbacks(app):
     )
     def update_components_from_store(store_data, n_clicks):
         
-        # Update table
-        df_recent = get_data_from_store(store_data, most_recent=True)
+        # get data
+        df_all = get_data_from_store(store_data)
 
-        _convert_timestamps(df_recent)
 
-        format_timestamps(df_recent)
-        
-        
-
+        # update table
+        df_recent = get_most_recent(df_all)
         table_data, table_columns = update_table(df_recent)
 
         # If graphs are not paused, update them as well
@@ -166,7 +167,6 @@ def register_callbacks(app):
 
         # Update graphs
 
-        df_all = get_data_from_store(store_data, most_recent=False)
 
         _convert_timestamps(df_all)
 
@@ -192,7 +192,7 @@ def register_callbacks(app):
         prevent_initial_call=True,
     )
     def download_all_data(n_clicks, selected_options, store_data):
-        df = get_data_from_store(store_data, most_recent=False)
+        df = get_data_from_store(store_data)
 
         # only keep selected columns and the timestamp
         selected_columns = selected_options + ["timestamp"]

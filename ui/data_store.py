@@ -31,13 +31,28 @@ def base64_to_df(encoded):
     df = pd.read_parquet(buffer)
     return df
 
+def get_most_recent(df):
+    """
+    Will return the last x rows from a dataframe that all have the same timestamp
+    """
+    # get the most recent timestamp from the last row and return all rows with that one
+    last_index = len(df) - 1
+    most_recent_timestamp = df.iloc[last_index]["timestamp"]
 
-def get_data_from_store(store_data, most_recent=True):
+    # Iterate backwards until a different timestamp is found
+    for i in range(last_index, -1, -1):
+        if df.iloc[i]["timestamp"] != most_recent_timestamp:
+            # Slice from the next index to the end to get all rows with the most recent timestamp
+            return df.iloc[i + 1 :]
+    return df  # In case all rows have the same timestamp
+    
+
+
+def get_data_from_store(store_data):
     """Parses the data store and returns a dataframe with the data
 
     Args:
         store_data (string): base64 data from the data store
-        most_recent (bool, optional): When set to true, only the most recent measurement is returned. When set to false, all recorded measurements are returned. Defaults to True.
     """
     if store_data is None:
         return None
@@ -48,20 +63,8 @@ def get_data_from_store(store_data, most_recent=True):
     if df.empty:
         return df
 
-    if most_recent:
-        # get the most recent timestamp from the last row and return all rows with that one
-        last_index = len(df) - 1
-        most_recent_timestamp = df.iloc[last_index]["timestamp"]
-
-        # Iterate backwards until a different timestamp is found
-        for i in range(last_index, -1, -1):
-            if df.iloc[i]["timestamp"] != most_recent_timestamp:
-                # Slice from the next index to the end to get all rows with the most recent timestamp
-                return df.iloc[i + 1 :]
-        return df  # In case all rows have the same timestamp
-    else:
-        # return all the data
-        return df
+    # return all the data
+    return df
 
 
 def update_store(new_data, existing_data):
@@ -79,7 +82,7 @@ def update_store(new_data, existing_data):
     # if there is existing data, append to it. Otherwise, override it
     if existing_data:
         # convert existing data to df
-        existing_df = get_data_from_store(existing_data, most_recent=False)
+        existing_df = get_data_from_store(existing_data)
 
         # concat
         updated_df = pd.concat([existing_df, new_data])
