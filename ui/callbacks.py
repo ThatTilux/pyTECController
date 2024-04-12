@@ -124,13 +124,15 @@ def _is_graph_paused(n_clicks):
 # all callbacks inside this function
 def register_callbacks(app):
     @app.callback(  # updates the data store
-        Output("store-tec-data", "data"),
-        [Input("interval-component", "n_intervals"), State("store-tec-data", "data")],
+        Output("interval-component", "n_intervals"), # dummy
+        [Input("interval-component", "n_intervals")],
     )
-    def update_store_data(n, existing_store_data):
+    def update_store_data(n):
         # Fetch data from the TEC interface
         df = tec_interface()._get_data()
-        return update_store(df, existing_store_data)
+        # update the store
+        update_store(df)
+        return dash.no_update
         
         
         
@@ -143,12 +145,12 @@ def register_callbacks(app):
             Output("graph-output-current", "figure"),
             Output("graph-output-voltage", "figure"),
         ],
-        [Input("store-tec-data", "data"), State("btn-pause-graphs", "n_clicks")],
+        [Input("interval-component", "n_intervals"), State("btn-pause-graphs", "n_clicks")],
     )
-    def update_components_from_store(store_data, n_clicks):
+    def update_components_from_store(n, n_clicks):
         
         # get data
-        df_all = get_data_from_store(store_data)
+        df_all = get_data_from_store()
 
 
         # update table
@@ -187,12 +189,11 @@ def register_callbacks(app):
         [
             Input("btn-download-csv", "n_clicks"),
             State("checkboxes-download", "value"),
-            State("store-tec-data", "data"),
         ],
         prevent_initial_call=True,
     )
-    def download_all_data(n_clicks, selected_options, store_data):
-        df = get_data_from_store(store_data)
+    def download_all_data(n_clicks, selected_options):
+        df = get_data_from_store()
 
         # only keep selected columns and the timestamp
         selected_columns = selected_options + ["timestamp"]
