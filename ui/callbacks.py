@@ -1,5 +1,7 @@
+import base64
 from datetime import datetime
 from io import StringIO
+import io
 import json
 from time import sleep
 import dash
@@ -16,6 +18,9 @@ from ui.components.graphs import (
 
 _tec_interface: TECInterface = None
 
+# timestamp of the last data pulled
+_last_data_timestamp = None
+
 
 def tec_interface():
     global _tec_interface
@@ -24,19 +29,22 @@ def tec_interface():
     return _tec_interface
 
 
-def _convert_store_data_to_df(store_data):
-    # Parse the JSON string into a Python dictionary
-    data_dict = json.loads(store_data)
+def df_to_base64(df):
+    """
+    Converts a dataframe to base64 for storage
+    """
+    buffer = io.BytesIO()
+    df.to_parquet(buffer, index=True) # includes index
+    encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return encoded
 
-    # Extract the column names
-    columns = data_dict["columns"]
-
-    # Convert the multi-level index to a tuple index, which pandas can handle
-    index = pd.MultiIndex.from_tuples(data_dict["index"], names=["Plate", "TEC_ID"])
-
-    # Create the DataFrame using the data, column names, and multi-level index
-    df = pd.DataFrame(data_dict["data"], index=index, columns=columns)
-
+def base64_to_df(encoded):
+    """
+    Converts a base64 encoded dataframe back to a dataframe
+    """
+    data = base64.b64decode(encoded)
+    buffer = io.BytesIO(data)
+    df = pd.read_parquet(buffer)
     return df
 
 
@@ -44,15 +52,15 @@ def get_data_from_store(store_data, most_recent=True):
     """Parses the data store and returns a dataframe with the data
 
     Args:
-        store_data (string): json data from the data store
+        store_data (string): base64 data from the data store
         most_recent (bool, optional): When set to true, only the most recent measurement is returned. When set to false, all recorded measurements are returned. Defaults to True.
     """
     if store_data is None:
         return None
 
     # convert json to df
-    df = _convert_store_data_to_df(store_data)
-
+    df = base64_to_df(store_data)
+    
     if df.empty:
         return df
 
@@ -123,7 +131,7 @@ def update_table(_df):
     df["Label"] = (
         df.index.get_level_values("Plate").str.upper()
         + "_"
-        + df.index.get_level_values("TEC_ID").astype(str)
+        + df.index.get_level_values("TEC").astype(str)
     )
 
     # create column odering so label is first
@@ -166,29 +174,31 @@ def register_callbacks(app):
     def update_store_data(n, existing_store_data_json):
         # Fetch data from the TEC interface
         df = tec_interface()._get_data()
+        
+            # check if the timestamp of the "new" data and most recent old data matches
+            # in that case, do not append the data as we already have it
+            # this happenes sometimes as TECInterface will only give new data every n second(s)
+        global _last_data_timestamp
+        
+        new_timestamp = df.iloc[len(df) - 1]["timestamp"]
+        if _last_data_timestamp == new_timestamp:
+            return dash.no_update
+        
+        _last_data_timestamp = new_timestamp
 
         # if there is existing data, append to it. Otherwise, override it
         if existing_store_data_json:
             # convert existing data to df
-            existing_df = _convert_store_data_to_df(existing_store_data_json)
-
-            # check if the timestamp of the "new" data and most recent old data matches
-            # in that case, do not append the data as we already have it
-            # this happenes sometimes as TECInterface will only give new data every n second(s)
-            if (
-                existing_df.iloc[len(existing_df) - 1]["timestamp"]
-                == df.iloc[len(df) - 1]["timestamp"]
-            ):
-                return existing_store_data_json
+            existing_df = get_data_from_store(existing_store_data_json, most_recent=False)
 
             # concat
             updated_df = pd.concat([existing_df, df])
 
             # convert back to json for storage
-            updated_store_data_json = updated_df.to_json(orient="split")
+            updated_store_data_json = df_to_base64(updated_df)
         else:
             # convert new data to json for storage
-            updated_store_data_json = df.to_json(orient="split")
+            updated_store_data_json = df_to_base64(df)
 
         return updated_store_data_json
 
