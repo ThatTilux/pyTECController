@@ -87,7 +87,9 @@ if __name__ == "__main__":
 
     r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
     REDIS_KEY = "tec-data-store"
+    REDIS_KEY_ALL = "tec-data-store-all"
     r.delete(REDIS_KEY)
+    r.delete(REDIS_KEY_ALL)
     
     # listen to ui commands channel
     pubsub = r.pubsub()
@@ -122,3 +124,5 @@ if __name__ == "__main__":
         print(f"{sleep_time}s")
         if sleep_time > 0:
             sleep(sleep_time)
+        else:
+            print("[WARNING]: Sampling rate fell below 1Hz. Lowering MAX_ROWS_STORAGE in ui.data_store might help.")

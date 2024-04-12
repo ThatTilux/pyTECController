@@ -12,7 +12,7 @@ from ui.components.graphs import (
     update_graph_object_temperature,
     update_graph_max_voltage,
 )
-from ui.data_store import get_data_from_store, get_most_recent, update_store
+from ui.data_store import get_data_for_download, get_data_from_store, get_most_recent, update_store
 
 
 def update_table(_df):
@@ -181,7 +181,7 @@ def register_callbacks(app):
         prevent_initial_call=True,
     )
     def download_all_data(n_clicks, selected_options):
-        df = get_data_from_store()
+        df = get_data_for_download()
 
         # only keep selected columns and the timestamp
         selected_columns = selected_options + ["timestamp"]
