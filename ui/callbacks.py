@@ -5,6 +5,7 @@ from dash.dependencies import Output, Input, State
 from dash import dcc
 import pandas as pd
 from app.serial_ports import NUM_TECS
+from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.components.graphs import (
     format_timestamps,
     update_graph_max_current,
@@ -103,10 +104,6 @@ def _is_graph_paused(n_clicks):
     return n_clicks % 2 == 1
 
 
-def truncate_df(n_datapoints):
-    """
-    Truncates a dataframe to only include the last n_datapoints points
-    """
 
 
 # all callbacks inside this function
@@ -202,3 +199,36 @@ def register_callbacks(app):
         btn_label = "Resume Graphs" if _is_graph_paused(n_clicks) else "Freeze Graphs"
 
         return btn_label
+    
+    @app.callback(
+        Output("btn-stop-all-tecs", "n_clicks"),  # dummy
+        [Input("btn-stop-all-tecs", "n_clicks")],
+        prevent_initial_call=True,
+    )
+    def stop_tecs(n_clicks):
+        disable_all_plates()
+        return dash.no_update
+    
+    
+    @app.callback(
+        Output("btn-start-tecs", "children"),  # dummy
+        [
+            Input("btn-start-tecs", "n_clicks"),
+            State("input-top-plate", "value"),
+            State("input-bottom-plate", "value"),
+        ],
+        prevent_initial_call=True,
+    )
+    def start_tecs(n_clicks, top_temp, bottom_temp):
+        # the number input ensures that the type is int or float or None
+        if top_temp is None or bottom_temp is None:
+            return dash.no_update
+
+        top_temp = float(top_temp)
+        bottom_temp = float(bottom_temp)
+
+        set_temperature("top", top_temp)
+        set_temperature("bottom", bottom_temp)
+
+        enable_all_plates()
+        return dash.no_update

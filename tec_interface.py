@@ -56,6 +56,24 @@ class TECInterface:
     def enable_all_plates(self):
         self.system_controller.enable_all()
 
+    def handle_message(self, message):
+        """
+        Handles an incoming message from the UI. 
+        Format: "command$$value1$$value2$$.."
+        """
+        splitted = message["data"].split("$$")
+        command = splitted[0]
+        match command:
+            case "SET_TEMP":
+                plate = splitted[1]
+                temp = float(splitted[2])
+                self.set_temperature(plate, temp)
+            case "DISABLE_ALL":
+                self.disable_all_plates()
+            case "ENABLE_ALL":
+                self.enable_all_plates()
+            
+                    
 
 
 
@@ -70,6 +88,10 @@ if __name__ == "__main__":
     r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
     REDIS_KEY = "tec-data-store"
     r.delete(REDIS_KEY)
+    
+    # listen to ui commands channel
+    pubsub = r.pubsub()
+    pubsub.subscribe("ui_commands")
 
     _last_data_timestamp = None
     
@@ -78,13 +100,25 @@ if __name__ == "__main__":
     
     while True:
         time_start = time() # in seconds
+        
+        # listen to any commands
+        message = pubsub.get_message()        
+        while message and message["type"] == "message":
+            tec_interface.handle_message(message)
+            message = pubsub.get_message()       
+            
+        # get and store data
         data = tec_interface._get_data()
         update_store(data)
+        
+        # just for testing
         df = get_data_from_store()
         _convert_timestamps(df)
         format_timestamps(df)
         print(df)
-        sleep_time = 1 - (time() - time_start) # 1 second between each measurement
+        
+        # sleep to get measurements every second
+        sleep_time = 1 - (time() - time_start) 
         print(f"{sleep_time}s")
         if sleep_time > 0:
             sleep(sleep_time)
