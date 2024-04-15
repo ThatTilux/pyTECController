@@ -80,7 +80,7 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    ```
    docker start tec-data-redis
    ```
-2. Connect the TEC control boars via USB.
+2. Connect the TEC control boards via USB.
 3. Start this software by navigating into the root directory of this software and executing the start file:
    ```
    .\start.bat
