@@ -1,53 +1,89 @@
 # pyTECController
-Control Software for TECs.
+Control software for Thermoelectric Coolers (TECs).
 
-For this to work:
-1. Get the PYMECOM files from the repository: https://github.com/spomjaksilp/pyMeCom?tab=readme-ov-file
-2. Set up a virtual environment (e. g., miniconda3) and activate it
-3. cd into the pymecom and install it, e.g. 'pip install --user .'
-4. Use this proj
+## Installation
+### Prerequisites
+- This software is designed for Windows.
+- It requires that 4 TEC control boards are connected via USB, each controlling 2 TECs.
+- It assumes the presence of a top and a bottom plate heated by the TECs.
 
+### Set up PYMECOM
+1. Clone or download the PYMECOM files from the repository: [pyMeCom](https://github.com/spomjaksilp/pyMeCom?tab=readme-ov-file)
+2. Optionally, set up a virtual environment (e.g., using Miniconda3) and activate it.
+3. Navigate into the PYMECOM directory and install it using the command:
+   ```
+   pip install --user .
+   ```
 
+### Set up Redis with Docker
+1. Download and install Docker Desktop for Windows. (Restart the computer if prompted.)
+2. Verify the Docker installation with the command:
+   ```
+   docker --version
+   ```
+3. Pull the latest Redis version with:
+   ```
+   docker pull redis
+   ```
+4. Start the Redis container with the following command:
+   ```
+   docker run --name tec-data-redis -p 6379:6379 -d redis
+   ```
+5. Verify that Redis is running by entering the Redis CLI with:
+   ```
+   docker exec -it tec-data-redis redis-cli
+   ```
+   Then, in the command line, type `ping`. Redis should return `PONG`.
 
-Also, Redis needs to be installed and run using docker: 
-Step 1: Install Docker Desktop on Windows
-Download Docker Desktop for Windows:
+## Optional: Developer Setup for Debugging with VSCode
+To set up debugging in Visual Studio Code, create a `launch.json` file in the `.vscode` folder at the root of your project with the following configurations:
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Dash",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "ui.app",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "env": {
+                "FLASK_ENV": "development",
+                "PYTHONUNBUFFERED": "1"
+            }
+        },
+        {
+            "name": "Python: Data Acquisition",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "tec_interface",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "env": {
+                "PYTHONUNBUFFERED": "1"
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Run All",
+            "configurations": ["Python: Dash", "Python: Data Acquisition"]
+        }
+    ]
+}
+```
+This configuration allows you to debug the software in VSCode.
 
-Visit the Docker Hub to download Docker Desktop for Windows. Choose the version suitable for your Windows (either for Windows 10 or Windows 11).
-Install Docker Desktop:
+## Starting the Application
+1. Start the Redis Docker container using:
+   ```
+   docker start tec-data-redis
+   ```
+2. Connect the TEC control boars via USB.
+3. Start this software by navigating into this directory and executing the start file:
+   ```
+   .\start.bat
+   ```
 
-Run the installer that you downloaded. Follow the installation prompts to enable the required features, including the WSL 2 backend, which Docker will suggest if you're on Windows 10. Windows 11 should handle this automatically.
-Restart your computer if prompted.
-Verify Docker Installation:
-
-After installation and restarting, open a command prompt or PowerShell and type:
-css
-Copy code
-docker --version
-This command checks that Docker is installed correctly and running.
-Step 2: Run Redis Using Docker
-Pull the Redis Image:
-
-Open your command prompt or PowerShell, and run:
-Copy code
-docker pull redis
-This command downloads the latest Redis image from Docker Hub.
-Start Redis Container:
-
-In the same command prompt or PowerShell, run:
-css
-Copy code
-docker run --name my-redis -p 6379:6379 -d redis
-This command starts a Redis container named my-redis. The -p 6379:6379 option maps port 6379 on your host to port 6379 in the Redis container, allowing your applications to connect to Redis. The -d flag runs the container in the background.
-Verify Redis is Running:
-
-Test that Redis is operational by connecting to it through the Redis command-line interface:
-perl
-Copy code
-docker exec -it my-redis redis-cli
-In the Redis CLI, type:
-Copy code
-ping
-If Redis is running, it will return:
-Copy code
-PONG
+Ensure that you follow these instructions carefully to correctly set up and start using the pyTECController software.
