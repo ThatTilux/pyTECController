@@ -19,8 +19,13 @@ def control_form():
                     step=TEMP_INPUT_LIMITS["step"],
                     style={"maxWidth": 100},
                 ),
-                dbc.InputGroupText("°C", id=id+"-group-text"),
-                dbc.Popover(popover_content, target=id+"-group-text", body=True, trigger="hover"),
+                dbc.InputGroupText("°C", id=id + "-group-text"),
+                dbc.Popover(
+                    popover_content,
+                    target=id + "-group-text",
+                    body=True,
+                    trigger="hover",
+                ),
             ],
             className="mb-3",
         )
@@ -75,11 +80,13 @@ def control_form():
                                     "Stop all TECs",
                                     id="btn-stop-all-tecs",
                                     color="danger",
-                                    style={"margin-right": "1em"}
+                                    style={"margin-right": "1em"},
                                 ),
                                 dbc.Button(
-                                    "Start", id="btn-start-tecs", color="primary",
-                                    class_name="ml-2"
+                                    "Start",
+                                    id="btn-start-tecs",
+                                    color="primary",
+                                    class_name="ml-2",
                                 ),
                             ]
                         ),
@@ -91,6 +98,6 @@ def control_form():
                 className="mt-3",
             ),
         ],
-        className="mb-5 p-4",
+        className="mb-3 p-4",
         style={"border": "1px solid #ddd", "borderRadius": "5px"},
     )

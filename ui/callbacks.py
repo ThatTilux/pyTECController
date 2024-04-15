@@ -8,11 +8,19 @@ from app.serial_ports import NUM_TECS
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.components.graphs import (
     format_timestamps,
+    update_graph_all_current,
+    update_graph_all_temperature,
+    update_graph_all_voltage,
     update_graph_max_current,
     update_graph_object_temperature,
     update_graph_max_voltage,
 )
-from ui.data_store import get_data_for_download, get_data_from_store, get_most_recent, update_store
+from ui.data_store import (
+    get_data_for_download,
+    get_data_from_store,
+    get_most_recent,
+    update_store,
+)
 
 
 def update_table(_df):
@@ -104,8 +112,6 @@ def _is_graph_paused(n_clicks):
     return n_clicks % 2 == 1
 
 
-
-
 # all callbacks inside this function
 def register_callbacks(app):
     @app.callback(  # handles the table and graphs
@@ -113,8 +119,11 @@ def register_callbacks(app):
             Output("tec-data-table", "data"),
             Output("tec-data-table", "columns"),
             Output("graph-object-temperature", "figure"),
-            Output("graph-output-current", "figure"),
-            Output("graph-output-voltage", "figure"),
+            Output("graph-max-current", "figure"),
+            Output("graph-max-voltage", "figure"),
+            Output("graph-all-current", "figure"),
+            Output("graph-all-voltage", "figure"),
+            Output("graph-all-temperature", "figure"),
         ],
         [
             Input("interval-component", "n_intervals"),
@@ -125,14 +134,17 @@ def register_callbacks(app):
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
-        MAX_DP_MAX_CURRENT = NUM_TECS * 5 * 60  # 5 min
-        MAX_DP_MAX_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
+        MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
+        MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
 
         # get data
         df_all = get_data_from_store()
 
         if df_all is None:
             return (
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
@@ -152,6 +164,9 @@ def register_callbacks(app):
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
             )
 
         # Update graphs
@@ -161,15 +176,21 @@ def register_callbacks(app):
         graph_object_temp = update_graph_object_temperature(
             df_all.tail(MAX_DP_OBJECT_TEMP)
         )
-        graph_output_current = update_graph_max_current(df_all.tail(MAX_DP_MAX_CURRENT))
-        graph_output_voltage = update_graph_max_voltage(df_all.tail(MAX_DP_MAX_VOLTAGE))
+        graph_max_current = update_graph_max_current(df_all.tail(MAX_DP_CURRENT))
+        graph_max_voltage = update_graph_max_voltage(df_all.tail(MAX_DP_VOLTAGE))
+        graph_all_current = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
+        graph_all_voltage = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
+        graph_all_temperature = update_graph_all_temperature(df_all.tail(MAX_DP_OBJECT_TEMP))
 
         return (
             table_data,
             table_columns,
             graph_object_temp,
-            graph_output_current,
-            graph_output_voltage,
+            graph_max_current,
+            graph_max_voltage,
+            graph_all_current,
+            graph_all_voltage,
+            graph_all_temperature
         )
 
     @app.callback(
@@ -199,7 +220,7 @@ def register_callbacks(app):
         btn_label = "Resume Graphs" if _is_graph_paused(n_clicks) else "Freeze Graphs"
 
         return btn_label
-    
+
     @app.callback(
         Output("btn-stop-all-tecs", "n_clicks"),  # dummy
         [Input("btn-stop-all-tecs", "n_clicks")],
@@ -208,8 +229,7 @@ def register_callbacks(app):
     def stop_tecs(n_clicks):
         disable_all_plates()
         return dash.no_update
-    
-    
+
     @app.callback(
         Output("btn-start-tecs", "children"),  # dummy
         [
