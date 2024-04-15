@@ -13,7 +13,43 @@ def graphs():
     return html.Div(
         [
             dbc.Card(
-                dbc.CardBody((graph_with_config("graph-object-temperature"))),
+                dbc.CardBody(
+                    html.Div(
+                        [
+                            graph_with_config("graph-object-temperature"),
+                            html.Div(
+                                [
+                                    dbc.Label("Y-Axis Range:"),
+                                    dbc.Checklist(
+                                        options=[{"label": "Autoscale", "value": True}],
+                                        id="avg-temperature-autoscale",
+                                        class_name="ml-2",
+                                        switch=True,
+                                        value=[True],
+                                    ),
+                                    dbc.Col(
+                                        dbc.InputGroup(
+                                            [
+                                                dbc.Input(
+                                                    placeholder="min",
+                                                    type="number",
+                                                    id="avg-temperature-yaxis-min",
+                                                ),
+                                                dbc.Input(
+                                                    placeholder="max",
+                                                    type="number",
+                                                    id="avg-temperature-yaxis-max",
+                                                ),
+                                            ],
+                                        ),
+                                        width=4,
+                                    ),
+                                ],
+                                className="ms-5",
+                            ),
+                        ]
+                    )
+                ),
                 class_name="mt-3 mb-3",
             ),
             graph_tabs(
@@ -72,7 +108,7 @@ def graph_tabs(graphs):
                 label=label,
             )
             for label, graph1, graph2 in graphs
-        ]
+        ],
     )
 
 
@@ -100,7 +136,7 @@ def _force_two_ticks(fig, df):
     )
 
 
-def update_graph_object_temperature(df):
+def update_graph_object_temperature(df, yaxis_range):
 
     # Group by Plate and Timestamp, then calculate mean
     avg_temps = (
@@ -142,6 +178,10 @@ def update_graph_object_temperature(df):
 
     # add custom legend title
     fig.for_each_trace(lambda trace: trace.update(name=label_map[trace.name]))
+
+    # custom yaxis range
+    if yaxis_range:
+        fig.update_layout(yaxis={"range": yaxis_range})
 
     # Add lines for target object temperatures
     for plate in target_temps["Plate"].unique():

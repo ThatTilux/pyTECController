@@ -127,10 +127,13 @@ def register_callbacks(app):
             Input("interval-component", "n_intervals"),
             State("btn-pause-graphs", "n_clicks"),
             State("graph-tabs", "active_tab"),
+            Input("avg-temperature-yaxis-min", "value"),
+            Input("avg-temperature-yaxis-max", "value"),
+            Input("avg-temperature-autoscale", "value"),
         ],
         prevent_initial_call=True
     )
-    def update_components_from_store(n, n_clicks, active_tab):
+    def update_components_from_store(n, n_clicks, active_tab, avg_temp_ymin, avg_temp_ymax, avg_temp_autoscale):
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
@@ -175,7 +178,8 @@ def register_callbacks(app):
         _convert_timestamps(df_all)
 
         graph_object_temp = update_graph_object_temperature(
-            df_all.tail(MAX_DP_OBJECT_TEMP)
+            df_all.tail(MAX_DP_OBJECT_TEMP),
+            yaxis_range=[avg_temp_ymin, avg_temp_ymax] if not avg_temp_autoscale else None
         )
 
         # from the tab graphs, only update the visible ones
