@@ -1,3 +1,4 @@
+import os
 import dash
 from dash import html
 import dash_bootstrap_components as dbc
@@ -20,4 +21,5 @@ register_callbacks(app)
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    debug = os.getenv("FLASK_ENV") == "development"
+    app.run_server(debug=debug)

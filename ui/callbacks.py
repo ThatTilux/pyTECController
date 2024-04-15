@@ -126,9 +126,11 @@ def register_callbacks(app):
         [
             Input("interval-component", "n_intervals"),
             State("btn-pause-graphs", "n_clicks"),
+            State("graph-tabs", "active_tab"),
         ],
+        prevent_initial_call=True
     )
-    def update_components_from_store(n, n_clicks):
+    def update_components_from_store(n, n_clicks, active_tab):
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
@@ -165,16 +167,27 @@ def register_callbacks(app):
 
         # Update graphs
 
+        # some of these might not get updated as they are not currently visible
+        graph_all_current = dash.no_update
+        graph_all_temperature = dash.no_update
+        graph_all_voltage = dash.no_update
+
         _convert_timestamps(df_all)
 
         graph_object_temp = update_graph_object_temperature(
             df_all.tail(MAX_DP_OBJECT_TEMP)
         )
-        graph_all_current = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
-        graph_all_voltage = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
-        graph_all_temperature = update_graph_all_temperature(
-            df_all.tail(MAX_DP_OBJECT_TEMP)
-        )
+
+        # from the tab graphs, only update the visible ones
+
+        if active_tab == "tab-current":
+            graph_all_current = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
+        elif active_tab == "tab-voltage":
+            graph_all_voltage = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
+        elif active_tab == "tab-temperature":
+            graph_all_temperature = update_graph_all_temperature(
+                df_all.tail(MAX_DP_OBJECT_TEMP)
+            )
 
         return (
             table_data,

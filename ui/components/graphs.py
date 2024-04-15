@@ -61,12 +61,14 @@ def graph_tabs(graphs):
             ]
 
     return dbc.Tabs(
-        [
+        id="graph-tabs",
+        children=[
             dbc.Tab(
                 dbc.Card(
                     dbc.CardBody(dbc.Row(card_content(graph1, graph2))),
                     class_name="mt-3",
                 ),
+                tab_id=f"tab-{label.lower()}",
                 label=label,
             )
             for label, graph1, graph2 in graphs
