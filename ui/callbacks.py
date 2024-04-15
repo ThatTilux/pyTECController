@@ -119,8 +119,6 @@ def register_callbacks(app):
             Output("tec-data-table", "data"),
             Output("tec-data-table", "columns"),
             Output("graph-object-temperature", "figure"),
-            Output("graph-max-current", "figure"),
-            Output("graph-max-voltage", "figure"),
             Output("graph-all-current", "figure"),
             Output("graph-all-voltage", "figure"),
             Output("graph-all-temperature", "figure"),
@@ -148,8 +146,6 @@ def register_callbacks(app):
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
-                dash.no_update,
-                dash.no_update,
             )
 
         # update table
@@ -165,8 +161,6 @@ def register_callbacks(app):
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
-                dash.no_update,
-                dash.no_update,
             )
 
         # Update graphs
@@ -176,21 +170,19 @@ def register_callbacks(app):
         graph_object_temp = update_graph_object_temperature(
             df_all.tail(MAX_DP_OBJECT_TEMP)
         )
-        graph_max_current = update_graph_max_current(df_all.tail(MAX_DP_CURRENT))
-        graph_max_voltage = update_graph_max_voltage(df_all.tail(MAX_DP_VOLTAGE))
         graph_all_current = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
         graph_all_voltage = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
-        graph_all_temperature = update_graph_all_temperature(df_all.tail(MAX_DP_OBJECT_TEMP))
+        graph_all_temperature = update_graph_all_temperature(
+            df_all.tail(MAX_DP_OBJECT_TEMP)
+        )
 
         return (
             table_data,
             table_columns,
             graph_object_temp,
-            graph_max_current,
-            graph_max_voltage,
             graph_all_current,
             graph_all_voltage,
-            graph_all_temperature
+            graph_all_temperature,
         )
 
     @app.callback(

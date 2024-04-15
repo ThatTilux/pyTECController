@@ -19,16 +19,8 @@ def graphs():
             graph_tabs(
                 [
                     ("Temperature", graph_with_config("graph-all-temperature"), None),
-                    (
-                        "Current",
-                        graph_with_config("graph-max-current"),
-                        graph_with_config("graph-all-current"),
-                    ),
-                    (
-                        "Voltage",
-                        graph_with_config("graph-max-voltage"),
-                        graph_with_config("graph-all-voltage"),
-                    ),
+                    ("Current", graph_with_config("graph-all-current"), None),
+                    ("Voltage", graph_with_config("graph-all-voltage"), None),
                 ]
             ),
         ]
