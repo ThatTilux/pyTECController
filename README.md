@@ -81,9 +81,7 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    docker start tec-data-redis
    ```
 2. Connect the TEC control boars via USB.
-3. Start this software by navigating into this directory and executing the start file:
+3. Start this software by navigating into the root directory of this software and executing the start file:
    ```
    .\start.bat
    ```
-
-Ensure that you follow these instructions carefully to correctly set up and start using the pyTECController software.
