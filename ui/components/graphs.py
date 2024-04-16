@@ -53,11 +53,29 @@ def graphs():
                 class_name="mt-3 mb-3",
             ),
             graph_tabs(
-                [
+                id="graph-tabs",
+                active_tab="tab-temperature",
+                graphs=[
                     ("Temperature", graph_with_config("graph-all-temperature"), None),
                     ("Current", graph_with_config("graph-all-current"), None),
                     ("Voltage", graph_with_config("graph-all-voltage"), None),
-                ]
+                ],
+            ),
+            html.Div(
+                graph_tabs(
+                    id="graph-tabs-2",
+                    active_tab="tab-current",
+                    graphs=[
+                        (
+                            "Temperature",
+                            graph_with_config("graph-all-temperature-2"),
+                            None,
+                        ),
+                        ("Current", graph_with_config("graph-all-current-2"), None),
+                        ("Voltage", graph_with_config("graph-all-voltage-2"), None),
+                    ],
+                ),
+                className="mt-3",
             ),
         ]
     )
@@ -73,7 +91,7 @@ def graph_with_config(id):
     )
 
 
-def graph_tabs(graphs):
+def graph_tabs(id, graphs, active_tab=""):
     """
     Tabs for graphs. Each tab has 2 graphs side by side (only 1 on md and smaller or if only 1 graph is provided)
     Format: [(label, graph1, graph2 | None)]
@@ -97,7 +115,7 @@ def graph_tabs(graphs):
             ]
 
     return dbc.Tabs(
-        id="graph-tabs",
+        id=id,
         children=[
             dbc.Tab(
                 dbc.Card(
@@ -109,6 +127,7 @@ def graph_tabs(graphs):
             )
             for label, graph1, graph2 in graphs
         ],
+        active_tab=active_tab,
     )
 
 

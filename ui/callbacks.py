@@ -16,6 +16,7 @@ from ui.components.graphs import (
     update_graph_max_voltage,
 )
 from ui.data_store import (
+    detect_dummy,
     get_data_for_download,
     get_data_from_store,
     get_most_recent,
@@ -120,20 +121,32 @@ def register_callbacks(app):
             Output("tec-data-table", "columns"),
             Output("graph-object-temperature", "figure"),
             Output("graph-all-current", "figure"),
+            Output("graph-all-current-2", "figure"),
             Output("graph-all-voltage", "figure"),
+            Output("graph-all-voltage-2", "figure"),
             Output("graph-all-temperature", "figure"),
+            Output("graph-all-temperature-2", "figure"),
         ],
         [
             Input("interval-component", "n_intervals"),
             State("btn-pause-graphs", "n_clicks"),
             State("graph-tabs", "active_tab"),
+            State("graph-tabs-2", "active_tab"),
             Input("avg-temperature-yaxis-min", "value"),
             Input("avg-temperature-yaxis-max", "value"),
             Input("avg-temperature-autoscale", "value"),
         ],
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
-    def update_components_from_store(n, n_clicks, active_tab, avg_temp_ymin, avg_temp_ymax, avg_temp_autoscale):
+    def update_components_from_store(
+        n,
+        n_clicks,
+        active_tab,
+        active_tab_2,
+        avg_temp_ymin,
+        avg_temp_ymax,
+        avg_temp_autoscale,
+    ):
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
@@ -145,6 +158,9 @@ def register_callbacks(app):
 
         if df_all is None:
             return (
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
@@ -166,20 +182,28 @@ def register_callbacks(app):
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
             )
 
         # Update graphs
 
         # some of these might not get updated as they are not currently visible
         graph_all_current = dash.no_update
+        graph_all_current2 = dash.no_update
         graph_all_temperature = dash.no_update
+        graph_all_temperature2 = dash.no_update
         graph_all_voltage = dash.no_update
+        graph_all_voltage2 = dash.no_update
 
         _convert_timestamps(df_all)
 
         graph_object_temp = update_graph_object_temperature(
             df_all.tail(MAX_DP_OBJECT_TEMP),
-            yaxis_range=[avg_temp_ymin, avg_temp_ymax] if not avg_temp_autoscale else None
+            yaxis_range=(
+                [avg_temp_ymin, avg_temp_ymax] if not avg_temp_autoscale else None
+            ),
         )
 
         # from the tab graphs, only update the visible ones
@@ -193,13 +217,25 @@ def register_callbacks(app):
                 df_all.tail(MAX_DP_OBJECT_TEMP)
             )
 
+        if active_tab_2 == "tab-current":
+            graph_all_current2 = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
+        elif active_tab_2 == "tab-voltage":
+            graph_all_voltage2 = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
+        elif active_tab_2 == "tab-temperature":
+            graph_all_temperature2 = update_graph_all_temperature(
+                df_all.tail(MAX_DP_OBJECT_TEMP)
+            )
+
         return (
             table_data,
             table_columns,
             graph_object_temp,
             graph_all_current,
+            graph_all_current2,
             graph_all_voltage,
+            graph_all_voltage2,
             graph_all_temperature,
+            graph_all_temperature2,
         )
 
     @app.callback(
@@ -260,4 +296,14 @@ def register_callbacks(app):
         set_temperature("bottom", bottom_temp)
 
         enable_all_plates()
+        return dash.no_update
+
+    # dummy detection
+    @app.callback(
+        Output("dummy-mode-heading", "style"),
+        Input("interval-dummy-detection", "n_intervals"),
+    )
+    def dummy_detection(n):
+        if detect_dummy():
+            return {"color": "red", "display": "block"}
         return dash.no_update

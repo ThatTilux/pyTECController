@@ -12,6 +12,9 @@ def download_accordion():
                         id="checkboxes-download",
                         options=[
                             {
+                                "label": "Loop Status",
+                                "value": "loop status"},
+                            {
                                 "label": "Object Temperature",
                                 "value": "object temperature",
                             },
@@ -23,6 +26,7 @@ def download_accordion():
                             {"label": "Output Voltage", "value": "output voltage"},
                         ],
                         value=[
+                            "loop status",
                             "object temperature",
                             "target object temperature",
                             "output current",

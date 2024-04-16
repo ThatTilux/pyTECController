@@ -75,8 +75,22 @@ class TECInterface:
             
                     
 
+class DummyInterface():
+    def __init__(self, dummy_csv_path):
+        self.df = pd.read_csv(dummy_csv_path)
+        # (temp)  set loop status
+        self.df["loop status"] = 0
+        # set multi level index
+        self.df.set_index(["Plate", "TEC"], inplace=True)
+        self.counter = 0
 
-
+    def _get_data(self):
+        start = self.counter * 8
+        self.counter = self.counter+1
+        return self.df[start:start+8]
+    
+    def handle_message(self, message):
+        pass
 
 
 
@@ -97,7 +111,16 @@ if __name__ == "__main__":
 
     _last_data_timestamp = None
     
-    tec_interface = TECInterface()
+    # try to connect
+    # use dummy data if connection unsuccessful
+    dummy = False
+    try:
+        tec_interface = TECInterface()
+    except:
+        tec_interface = DummyInterface("app/dummy_data/dummy.csv")
+        dummy = True
+        # publish dummy info to UI
+        r.publish("dummy-mode", "True")
     
     
     while True:
@@ -118,6 +141,9 @@ if __name__ == "__main__":
         _convert_timestamps(df)
         format_timestamps(df)
         print(df)
+        
+        if dummy:
+            print("TECs not connected. Using dummy data.")
         
         # sleep to get measurements every second
         sleep_time = 1 - (time() - time_start) 

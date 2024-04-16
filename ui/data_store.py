@@ -22,6 +22,12 @@ REDIS_KEY_STORE = "tec-data-store"
 # stores data that was too old for the above storage
 REDIS_KEY_STORE_ALL = "tec-data-store-all"
 
+# channel for notifying the ui in case of dummy mode
+REDIS_KEY_DUMMY_MODE = "dummy-mode"
+
+pubsub_dummy_mode = r.pubsub()
+pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
+
 # this is the maximum number of rows that will be stored
 # everything above this will be moved to another storage channel
 # the other channel can be accessed through the download
@@ -150,3 +156,14 @@ def transfer_rows(df):
     update_store(channel=REDIS_KEY_STORE_ALL, new_data=new_df)
 
     return df
+
+def detect_dummy():
+    """
+    Listens to a pubsub channel to check if dummy mode was activated
+    """
+    global pubsub_dummy_mode
+    message = pubsub_dummy_mode.get_message()
+    print(message)
+    if message:
+        return True
+    return False
