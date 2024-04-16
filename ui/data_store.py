@@ -22,6 +22,9 @@ REDIS_KEY_STORE = "tec-data-store"
 # stores data that was too old for the above storage
 REDIS_KEY_STORE_ALL = "tec-data-store-all"
 
+# channel for recovered data
+REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
+
 # channel for notifying the ui in case of dummy mode
 REDIS_KEY_DUMMY_MODE = "dummy-mode"
 
@@ -93,6 +96,9 @@ def get_data_from_store(channel=REDIS_KEY_STORE):
 
     # return all the data
     return df
+
+def get_recovered_data():
+    return get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
 
 
 def get_data_for_download():

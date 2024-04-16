@@ -13,7 +13,7 @@ import pandas as pd
 
 from ui.callbacks import _convert_timestamps
 from ui.components.graphs import format_timestamps
-from ui.data_store import get_data_from_store, update_store
+from ui.data_store import get_data_for_download, get_data_from_store, update_store
 
 class TECInterface:
     # Use existing data if last update was within this duration (in seconds)
@@ -102,6 +102,14 @@ if __name__ == "__main__":
     r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
     REDIS_KEY = "tec-data-store"
     REDIS_KEY_ALL = "tec-data-store-all"
+    # recovered data from last session
+    REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
+    
+    # save all previous data
+    r.delete(REDIS_KEY_PREVIOUS_DATA)
+    previous_data = get_data_for_download()
+    update_store(previous_data, REDIS_KEY_PREVIOUS_DATA)
+    
     r.delete(REDIS_KEY)
     r.delete(REDIS_KEY_ALL)
     

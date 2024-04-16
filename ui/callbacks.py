@@ -20,6 +20,7 @@ from ui.data_store import (
     get_data_for_download,
     get_data_from_store,
     get_most_recent,
+    get_recovered_data,
     update_store,
 )
 
@@ -245,6 +246,17 @@ def register_callbacks(app):
         selected_columns = selected_options + ["timestamp"]
         df = df[selected_columns]
 
+        time = datetime.now()
+        return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
+    
+    @app.callback(
+        Output("download-data-csv", "data", allow_duplicate=True),
+        Input("btn-download-recovered-csv", "n_clicks"),
+        prevent_initial_call=True
+    )
+    def download_recovered_data(n_clicks):
+        df = get_recovered_data()
+        
         time = datetime.now()
         return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
 

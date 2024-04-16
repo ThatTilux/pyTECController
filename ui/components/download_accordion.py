@@ -11,9 +11,7 @@ def download_accordion():
                     dbc.Checklist(
                         id="checkboxes-download",
                         options=[
-                            {
-                                "label": "Loop Status",
-                                "value": "loop status"},
+                            {"label": "Loop Status", "value": "loop status"},
                             {
                                 "label": "Object Temperature",
                                 "value": "object temperature",
@@ -33,11 +31,30 @@ def download_accordion():
                             "output voltage",
                         ],  # Default selected
                     ),
-                    dbc.Button("Download as CSV ", color="primary", id="btn-download-csv", class_name="mt-2"),
+                    dbc.Button(
+                        "Download as CSV ",
+                        color="primary",
+                        id="btn-download-csv",
+                        class_name="mt-2",
+                    ),
                 ],
-                title="Download data",
-            )
+                title="Download Data",
+            ),
+            dbc.AccordionItem(
+                children=[
+                    html.P(
+                        "You might be able to recover the data from your previous session here:"
+                    ),
+                    dbc.Button(
+                        "Download recovered data as CSV",
+                        color="primary",
+                        id="btn-download-recovered-csv",
+                        class_name="mt-2",
+                    ),
+                ],
+                title="Recover Data",
+            ),
         ],
         start_collapsed=True,
-        class_name="mt-3 mb-3"
+        class_name="mt-3 mb-3",
     )
