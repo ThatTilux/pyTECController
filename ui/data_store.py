@@ -163,7 +163,6 @@ def detect_dummy():
     """
     global pubsub_dummy_mode
     message = pubsub_dummy_mode.get_message()
-    print(message)
     if message:
         return True
     return False

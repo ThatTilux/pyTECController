@@ -414,15 +414,15 @@ def update_graph_all_generic(_df, parameter, label, unit, fig_id):
 
     # Blue for all bottom ones and red for all top
     colors = {
-        f"BOTTOM_{i}": f"rgba(0, 0, {255 - 40*i}, 1.0)"
-        for i in range(df["Label"].nunique())
+        "TOP_0": "rgba(255, 0, 0, 1.0)",
+        "TOP_1": "rgba(255, 0, 140, 1.0)",
+        "TOP_2": "rgba(255, 0, 238, 1.0)",
+        "TOP_3": "rgba(183, 0, 255, 1.0)",
+        "BOTTOM_0": "rgba(0, 0, 255, 1.0)",
+        "BOTTOM_1": "rgba(0, 136, 255, 1.0)",
+        "BOTTOM_2": "rgba(0, 208, 255, 1.0)",
+        "BOTTOM_3": "rgba(0, 255, 234, 1.0)",
     }
-    colors.update(
-        {
-            f"TOP_{i}": f"rgba({255 - 30*i}, 0, 0, 1.0)"
-            for i in range(df["Label"].nunique())
-        }
-    )
 
     # format timestamps
     format_timestamps(df)
