@@ -1,6 +1,5 @@
 """
     These are the serialport allocations for the 4 boards controlling the TECs when connected via USB.
-    TODO: test whether this changes over time / on different machines
 """
 
 # this many TECs in total
