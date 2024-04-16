@@ -1,4 +1,5 @@
 import dash_bootstrap_components as dbc
+import dash
 from dash import html, dcc
 from dash.dependencies import Output, Input
 import pandas as pd
@@ -20,11 +21,9 @@ def graphs(app):
             dbc.Card(
                 dbc.CardBody(
                     html.Div(
-                        children=
-                            graph_with_config_and_controls(
-                                app, "graph-object-temperature"
-                            )
-                        
+                        children=graph_with_config_and_controls(
+                            app, "graph-object-temperature"
+                        )
                     )
                 ),
                 class_name="mt-3 mb-3",
@@ -90,41 +89,70 @@ def graph_with_config_and_controls(app, id):
     )
 
     controls = html.Div(
-        [
-            dbc.Label("Y-Axis Range:"),
-            dbc.Checklist(
-                options=[{"label": "Autoscale", "value": True}],
-                id=f"{id}-yaxis-autoscale",
-                class_name="ml-2",
-                switch=True,
-                value=[True],
+        children=[
+            dbc.Button(
+                "Show Y-Axis Controls",
+                id=f"{id}-yaxis-btn-toggle",
+                class_name="ms-5 mb-1",
             ),
-            dbc.Col(
-                dbc.InputGroup(
-                    [
-                        dbc.Input(
-                            placeholder="min",
-                            type="number",
-                            id=f"{id}-yaxis-min",
+            html.Div(
+                id=f"{id}-yaxis-controls-container",
+                style={"display": "none"},
+                children=[
+                    dbc.Label("Y-Axis Range:"),
+                    dbc.Checklist(
+                        options=[{"label": "Autoscale", "value": True}],
+                        id=f"{id}-yaxis-autoscale",
+                        class_name="ml-2",
+                        switch=True,
+                        value=[True],
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.Input(
+                                    placeholder="min",
+                                    type="number",
+                                    id=f"{id}-yaxis-min",
+                                    disabled=True,
+                                ),
+                                dbc.Input(
+                                    placeholder="max",
+                                    type="number",
+                                    id=f"{id}-yaxis-max",
+                                    disabled=True,
+                                ),
+                            ],
                         ),
-                        dbc.Input(
-                            placeholder="max",
-                            type="number",
-                            id=f"{id}-yaxis-max",
-                        ),
-                    ],
-                ),
-                width=4,
+                        width=4,
+                    ),
+                ],
+                className="ms-5",
             ),
-        ],
-        className="ms-5",
+        ]
     )
 
-    # register yaxis callback
+    # register yaxis callbacks
     @app.callback(
-        Output(
-            "dummy-output", "children", allow_duplicate=True
-        ),  # dummy, we wont change this
+        [
+            Output(f"{id}-yaxis-controls-container", "style"),
+            Output(f"{id}-yaxis-btn-toggle", "children"),
+        ],
+        Input(f"{id}-yaxis-btn-toggle", "n_clicks"),
+    )
+    def toggle_yaxis_container(n_clicks):
+        display = "none"
+        btn_label = "Show Y-Axis Controls"
+        if n_clicks is not None and n_clicks % 2 == 1:
+            display = "block"
+            btn_label = "Hide Y-Axis Controls"
+        return {"display": display}, btn_label
+
+    @app.callback(
+        [
+            Output(f"{id}-yaxis-min", "disabled"),
+            Output(f"{id}-yaxis-max", "disabled"),
+        ],
         [
             Input(f"{id}-yaxis-autoscale", "value"),
             Input(f"{id}-yaxis-min", "value"),
@@ -133,14 +161,18 @@ def graph_with_config_and_controls(app, id):
         prevent_initial_call=True,
     )
     def update_yaxis(autoscale, ymin, ymax):
+        disabled = False
         if autoscale:
             yaxis_range = None
+            disabled = True
         else:
             yaxis_range = [ymin, ymax]
 
         # update dict
         global graph_yaxis_ranges
         graph_yaxis_ranges[id] = yaxis_range
+
+        return disabled, disabled
 
     # return
     return [graph, controls]
@@ -226,7 +258,7 @@ def set_yaxis(fig_id, fig):
         yaxis_range = graph_yaxis_ranges[fig_id]
         if yaxis_range:
             fig.update_layout(yaxis={"range": yaxis_range})
-    except KeyError: # no yaxis was set
+    except KeyError:  # no yaxis was set
         pass
 
 
