@@ -132,9 +132,6 @@ def register_callbacks(app):
             State("btn-pause-graphs", "n_clicks"),
             State("graph-tabs", "active_tab"),
             State("graph-tabs-2", "active_tab"),
-            Input("avg-temperature-yaxis-min", "value"),
-            Input("avg-temperature-yaxis-max", "value"),
-            Input("avg-temperature-autoscale", "value"),
         ],
         prevent_initial_call=True,
     )
@@ -142,10 +139,7 @@ def register_callbacks(app):
         n,
         n_clicks,
         active_tab,
-        active_tab_2,
-        avg_temp_ymin,
-        avg_temp_ymax,
-        avg_temp_autoscale,
+        active_tab_2
     ):
 
         # only show this many datapoints:
@@ -201,29 +195,27 @@ def register_callbacks(app):
 
         graph_object_temp = update_graph_object_temperature(
             df_all.tail(MAX_DP_OBJECT_TEMP),
-            yaxis_range=(
-                [avg_temp_ymin, avg_temp_ymax] if not avg_temp_autoscale else None
-            ),
+            fig_id="graph-object-temperature"
         )
 
         # from the tab graphs, only update the visible ones
 
         if active_tab == "tab-current":
-            graph_all_current = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
+            graph_all_current = update_graph_all_current(df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current")
         elif active_tab == "tab-voltage":
-            graph_all_voltage = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
+            graph_all_voltage = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage")
         elif active_tab == "tab-temperature":
             graph_all_temperature = update_graph_all_temperature(
-                df_all.tail(MAX_DP_OBJECT_TEMP)
+                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature"
             )
 
         if active_tab_2 == "tab-current":
-            graph_all_current2 = update_graph_all_current(df_all.tail(MAX_DP_CURRENT))
+            graph_all_current2 = update_graph_all_current(df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current2")
         elif active_tab_2 == "tab-voltage":
-            graph_all_voltage2 = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE))
+            graph_all_voltage2 = update_graph_all_voltage(df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage2")
         elif active_tab_2 == "tab-temperature":
             graph_all_temperature2 = update_graph_all_temperature(
-                df_all.tail(MAX_DP_OBJECT_TEMP)
+                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature2"
             )
 
         return (

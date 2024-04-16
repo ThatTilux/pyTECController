@@ -1,5 +1,6 @@
 import dash_bootstrap_components as dbc
 from dash import html, dcc
+from dash.dependencies import Output, Input
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
@@ -8,46 +9,22 @@ import plotly.graph_objs as go
 # remove these buttons from all graphs
 GRAPH_BUTTONS_TO_REMOVE = ["lasso2d", "select2d", "autoScale2d"]
 
+# dictionary for yaxis ranges
+# format: id: [ymin, ymax]
+graph_yaxis_ranges = {}
 
-def graphs():
+
+def graphs(app):
     return html.Div(
         [
             dbc.Card(
                 dbc.CardBody(
                     html.Div(
-                        [
-                            graph_with_config("graph-object-temperature"),
-                            html.Div(
-                                [
-                                    dbc.Label("Y-Axis Range:"),
-                                    dbc.Checklist(
-                                        options=[{"label": "Autoscale", "value": True}],
-                                        id="avg-temperature-autoscale",
-                                        class_name="ml-2",
-                                        switch=True,
-                                        value=[True],
-                                    ),
-                                    dbc.Col(
-                                        dbc.InputGroup(
-                                            [
-                                                dbc.Input(
-                                                    placeholder="min",
-                                                    type="number",
-                                                    id="avg-temperature-yaxis-min",
-                                                ),
-                                                dbc.Input(
-                                                    placeholder="max",
-                                                    type="number",
-                                                    id="avg-temperature-yaxis-max",
-                                                ),
-                                            ],
-                                        ),
-                                        width=4,
-                                    ),
-                                ],
-                                className="ms-5",
-                            ),
-                        ]
+                        children=
+                            graph_with_config_and_controls(
+                                app, "graph-object-temperature"
+                            )
+                        
                     )
                 ),
                 class_name="mt-3 mb-3",
@@ -55,24 +32,46 @@ def graphs():
             graph_tabs(
                 id="graph-tabs",
                 active_tab="tab-temperature",
-                graphs=[
-                    ("Temperature", graph_with_config("graph-all-temperature"), None),
-                    ("Current", graph_with_config("graph-all-current"), None),
-                    ("Voltage", graph_with_config("graph-all-voltage"), None),
+                graphs_with_controls=[
+                    (
+                        "Temperature",
+                        graph_with_config_and_controls(app, "graph-all-temperature"),
+                        None,
+                    ),
+                    (
+                        "Current",
+                        graph_with_config_and_controls(app, "graph-all-current"),
+                        None,
+                    ),
+                    (
+                        "Voltage",
+                        graph_with_config_and_controls(app, "graph-all-voltage"),
+                        None,
+                    ),
                 ],
             ),
             html.Div(
                 graph_tabs(
                     id="graph-tabs-2",
                     active_tab="tab-current",
-                    graphs=[
+                    graphs_with_controls=[
                         (
                             "Temperature",
-                            graph_with_config("graph-all-temperature-2"),
+                            graph_with_config_and_controls(
+                                app, "graph-all-temperature-2"
+                            ),
                             None,
                         ),
-                        ("Current", graph_with_config("graph-all-current-2"), None),
-                        ("Voltage", graph_with_config("graph-all-voltage-2"), None),
+                        (
+                            "Current",
+                            graph_with_config_and_controls(app, "graph-all-current-2"),
+                            None,
+                        ),
+                        (
+                            "Voltage",
+                            graph_with_config_and_controls(app, "graph-all-voltage-2"),
+                            None,
+                        ),
                     ],
                 ),
                 className="mt-3",
@@ -81,34 +80,93 @@ def graphs():
     )
 
 
-def graph_with_config(id):
+def graph_with_config_and_controls(app, id):
     """
     Creates a graph with a predefined configuration
     """
-    return dcc.Graph(
+    graph = dcc.Graph(
         id=id,
         config={"modeBarButtonsToRemove": GRAPH_BUTTONS_TO_REMOVE},
     )
 
+    controls = html.Div(
+        [
+            dbc.Label("Y-Axis Range:"),
+            dbc.Checklist(
+                options=[{"label": "Autoscale", "value": True}],
+                id=f"{id}-yaxis-autoscale",
+                class_name="ml-2",
+                switch=True,
+                value=[True],
+            ),
+            dbc.Col(
+                dbc.InputGroup(
+                    [
+                        dbc.Input(
+                            placeholder="min",
+                            type="number",
+                            id=f"{id}-yaxis-min",
+                        ),
+                        dbc.Input(
+                            placeholder="max",
+                            type="number",
+                            id=f"{id}-yaxis-max",
+                        ),
+                    ],
+                ),
+                width=4,
+            ),
+        ],
+        className="ms-5",
+    )
 
-def graph_tabs(id, graphs, active_tab=""):
+    # register yaxis callback
+    @app.callback(
+        Output(
+            "dummy-output", "children", allow_duplicate=True
+        ),  # dummy, we wont change this
+        [
+            Input(f"{id}-yaxis-autoscale", "value"),
+            Input(f"{id}-yaxis-min", "value"),
+            Input(f"{id}-yaxis-max", "value"),
+        ],
+        prevent_initial_call=True,
+    )
+    def update_yaxis(autoscale, ymin, ymax):
+        if autoscale:
+            yaxis_range = None
+        else:
+            yaxis_range = [ymin, ymax]
+
+        # update dict
+        global graph_yaxis_ranges
+        graph_yaxis_ranges[id] = yaxis_range
+
+    # return
+    return [graph, controls]
+
+
+def graph_tabs(id, graphs_with_controls, active_tab=""):
     """
     Tabs for graphs. Each tab has 2 graphs side by side (only 1 on md and smaller or if only 1 graph is provided)
-    Format: [(label, graph1, graph2 | None)]
+    Format: [(label, [graph1, controls1], [graph2, controls2] or None)]
     """
 
-    def card_content(graph1, graph2):
-        if graph2 is None:
-            return dbc.Col(html.Div(graph1), width=12)
+    def card_content(graph1_with_controls, graph2_with_controls):
+        graph1, controls1 = graph1_with_controls
+
+        if graph2_with_controls is None:
+            return dbc.Col(html.Div(children=[graph1, controls1]), width=12)
         else:
+            graph2, controls2 = graph2_with_controls
             return [
                 dbc.Col(
-                    html.Div(graph1),
+                    html.Div(children=[graph1, controls1]),
                     width=12,
                     md=6,
                 ),
                 dbc.Col(
-                    html.Div(graph2),
+                    html.Div(children=[graph2, controls2]),
                     width=12,
                     md=6,
                 ),
@@ -119,13 +177,19 @@ def graph_tabs(id, graphs, active_tab=""):
         children=[
             dbc.Tab(
                 dbc.Card(
-                    dbc.CardBody(dbc.Row(card_content(graph1, graph2))),
+                    dbc.CardBody(
+                        dbc.Row(
+                            children=card_content(
+                                graph1_with_controls, graph2_with_controls
+                            )
+                        )
+                    ),
                     class_name="mt-3",
                 ),
                 tab_id=f"tab-{label.lower()}",
                 label=label,
             )
-            for label, graph1, graph2 in graphs
+            for label, graph1_with_controls, graph2_with_controls in graphs_with_controls
         ],
         active_tab=active_tab,
     )
@@ -155,7 +219,18 @@ def _force_two_ticks(fig, df):
     )
 
 
-def update_graph_object_temperature(df, yaxis_range):
+def set_yaxis(fig_id, fig):
+    # custom yaxis range
+    global graph_yaxis_ranges
+    try:
+        yaxis_range = graph_yaxis_ranges[fig_id]
+        if yaxis_range:
+            fig.update_layout(yaxis={"range": yaxis_range})
+    except KeyError: # no yaxis was set
+        pass
+
+
+def update_graph_object_temperature(df, fig_id):
 
     # Group by Plate and Timestamp, then calculate mean
     avg_temps = (
@@ -195,12 +270,11 @@ def update_graph_object_temperature(df, yaxis_range):
         color_discrete_map=color_map,
     )
 
+    # set yaxis
+    set_yaxis(fig_id=fig_id, fig=fig)
+
     # add custom legend title
     fig.for_each_trace(lambda trace: trace.update(name=label_map[trace.name]))
-
-    # custom yaxis range
-    if yaxis_range:
-        fig.update_layout(yaxis={"range": yaxis_range})
 
     # Add lines for target object temperatures
     for plate in target_temps["Plate"].unique():
@@ -234,7 +308,7 @@ def update_graph_object_temperature(df, yaxis_range):
     return fig
 
 
-def update_graph_max_abs_generic(df, parameter, label, unit):
+def update_graph_max_abs_generic(df, parameter, label, unit, fig_id):
     """
     Generic function for updating a graph displaying the absolute max of some value.
 
@@ -271,21 +345,24 @@ def update_graph_max_abs_generic(df, parameter, label, unit):
         markers=True,
     )
 
+    # set yaxis
+    set_yaxis(fig_id=fig_id, fig=fig)
+
     # force the plot to always only have 2 ticks
     _force_two_ticks(fig, max_abs)
 
     return fig
 
 
-def update_graph_max_voltage(df):
-    return update_graph_max_abs_generic(df, "output voltage", "Voltage", "V")
+def update_graph_max_voltage(df, fig_id):
+    return update_graph_max_abs_generic(df, "output voltage", "Voltage", "V", fig_id)
 
 
-def update_graph_max_current(df):
-    return update_graph_max_abs_generic(df, "output current", "Current", "A")
+def update_graph_max_current(df, fig_id):
+    return update_graph_max_abs_generic(df, "output current", "Current", "A", fig_id)
 
 
-def update_graph_all_generic(_df, parameter, label, unit):
+def update_graph_all_generic(_df, parameter, label, unit, fig_id):
     """
     Generic function for updating a graph displaying all instances of some parameter.
 
@@ -332,19 +409,24 @@ def update_graph_all_generic(_df, parameter, label, unit):
         markers=True,
     )
 
+    # set yaxis
+    set_yaxis(fig_id=fig_id, fig=fig)
+
     # force the plot to always only have 2 ticks
     _force_two_ticks(fig, df)
 
     return fig
 
 
-def update_graph_all_current(df):
-    return update_graph_all_generic(df, "output current", "Current", "A")
+def update_graph_all_current(df, fig_id):
+    return update_graph_all_generic(df, "output current", "Current", "A", fig_id)
 
 
-def update_graph_all_voltage(df):
-    return update_graph_all_generic(df, "output voltage", "Voltage", "V")
+def update_graph_all_voltage(df, fig_id):
+    return update_graph_all_generic(df, "output voltage", "Voltage", "V", fig_id)
 
 
-def update_graph_all_temperature(df):
-    return update_graph_all_generic(df, "object temperature", "Temperature", "°C")
+def update_graph_all_temperature(df, fig_id):
+    return update_graph_all_generic(
+        df, "object temperature", "Temperature", "°C", fig_id
+    )

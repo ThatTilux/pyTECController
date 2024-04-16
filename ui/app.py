@@ -11,7 +11,7 @@ app = dash.Dash(
     update_title=None,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
 )
-app.layout = layout
+app.layout = layout(app)
 
 
 # Importing callbacks at the end to avoid circular imports
