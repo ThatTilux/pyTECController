@@ -154,7 +154,8 @@ if __name__ == "__main__":
     dummy = False
     try:
         tec_interface = TECInterface()
-    except:
+    except Exception as e:
+        print(e)
         tec_interface = DummyInterface("app/dummy_data/dummy.csv")
         dummy = True
         # inform the UI of dummy mode

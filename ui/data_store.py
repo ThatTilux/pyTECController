@@ -109,6 +109,9 @@ def get_data_for_download():
     """
     df_1 = get_data_from_store(channel=REDIS_KEY_STORE_ALL)
     df_2 = get_data_from_store(channel=REDIS_KEY_STORE)
+    
+    if df_1 is None and df_2 is None:
+        return pd.DataFrame()
 
     df = pd.concat([df_1, df_2])
 
