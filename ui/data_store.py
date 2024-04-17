@@ -14,9 +14,10 @@ from app.serial_ports import NUM_TECS
 # timestamp of the last data pulled
 _last_data_timestamp = None
 
+# redis connection for storing data
 r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 
-# stores the data
+# stores current data
 REDIS_KEY_STORE = "tec-data-store"
 
 # stores data that was too old for the above storage
@@ -32,11 +33,10 @@ pubsub_dummy_mode = r.pubsub()
 pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
 
 # this is the maximum number of rows that will be stored
-# everything above this will be moved to another storage channel
-# the other channel can be accessed through the download
+# everything above this will be moved to the STORE_ALL channel
 MAX_ROWS_STORAGE = 8000
 
-# when the limit above is exceeded, this many rows will be moved
+# when the above limit of rows above is exceeded, this many rows will be moved
 REMOVE_ROWS_COUNT = 1504
 
 # do not disrupt data
@@ -45,7 +45,7 @@ assert REMOVE_ROWS_COUNT % NUM_TECS == 0
 
 def df_to_base64(df):
     """
-    Converts a dataframe to base64 for storage
+    Converts a dataframe to base64 with parquet for storage
     """
     buffer = io.BytesIO()
     df.to_parquet(buffer, index=True)  # includes index
@@ -55,7 +55,7 @@ def df_to_base64(df):
 
 def base64_to_df(encoded):
     """
-    Converts a base64 encoded dataframe back to a dataframe
+    Converts a base64 with parquet encoded dataframe back to a dataframe
     """
     data = base64.b64decode(encoded)
     buffer = io.BytesIO(data)
@@ -80,24 +80,26 @@ def get_most_recent(df):
 
 
 def get_data_from_store(channel=REDIS_KEY_STORE):
-    """Gets the data from the store and returns a dataframe with the data
-
-    Args:
-        store_data (string): base64 data from the data store
+    """
+    Gets the data from the store and returns a dataframe with the data
     """
 
+    # get data from storage channel
     store_data = r.get(channel)
 
     if store_data is None:
         return None
 
-    # convert json to df
+    # convert encoded data to df
     df = base64_to_df(store_data)
 
     # return all the data
     return df
 
 def get_recovered_data():
+    """
+    Gets the data that was saved from the previous session.
+    """
     return get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
 
 
@@ -114,11 +116,14 @@ def get_data_for_download():
 
 
 def update_store(new_data, channel=REDIS_KEY_STORE):
+    """
+    Appends new data to the data store.
+    """
     global _last_data_timestamp
 
     # check if the timestamp of the "new" data and most recent old data matches
     # in that case, do not append the data as we already have it
-    # this happenes sometimes as TECInterface will only give new data every n second(s)
+    # this may happen sometimes as TECInterface will only give new data every n second(s)
     if channel == REDIS_KEY_STORE:
         new_timestamp = new_data.iloc[len(new_data) - 1]["timestamp"]
 
@@ -127,6 +132,7 @@ def update_store(new_data, channel=REDIS_KEY_STORE):
 
         _last_data_timestamp = new_timestamp
 
+    # get the existing data
     existing_data = get_data_from_store(channel)
 
     # if there is existing data, append to it. Otherwise, override it
@@ -136,6 +142,7 @@ def update_store(new_data, channel=REDIS_KEY_STORE):
 
         # check if the data is too large
         if channel == REDIS_KEY_STORE and len(updated_df) > MAX_ROWS_STORAGE:
+            # move some data to the other channel
             updated_df = transfer_rows(updated_df)
 
         # convert back for storage
@@ -145,6 +152,7 @@ def update_store(new_data, channel=REDIS_KEY_STORE):
         # convert new data for storage
         updated_store_data = df_to_base64(new_data)
 
+    # update the data store
     r.set(channel, updated_store_data)
 
 
@@ -169,6 +177,8 @@ def detect_dummy():
     """
     global pubsub_dummy_mode
     message = pubsub_dummy_mode.get_message()
+    
+    # if the backend posted a message to the channel, dummy mode is activated
     if message:
         return True
     return False
