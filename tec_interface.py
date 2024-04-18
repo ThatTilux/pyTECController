@@ -100,8 +100,6 @@ class DummyInterface:
 
     def __init__(self, dummy_csv_path):
         self.df = pd.read_csv(dummy_csv_path)
-        # (temp)  set loop status
-        self.df["loop status"] = 0
         # set multi level index
         self.df.set_index(["Plate", "TEC"], inplace=True)
         self.counter = 0
@@ -112,6 +110,10 @@ class DummyInterface:
         """
         start = self.counter * 8
         self.counter = self.counter + 1
+        
+        if start + 8  > len(df):
+            return pd.DataFrame()
+        
         return self.df[start : start + 8]
 
     def handle_message(self, message):
