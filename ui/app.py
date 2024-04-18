@@ -15,7 +15,7 @@ app.layout = layout(app)
 
 
 # Importing callbacks at the end to avoid circular imports
-from .callbacks import register_callbacks
+from .callbacks.callbacks import register_callbacks
 
 register_callbacks(app)
 

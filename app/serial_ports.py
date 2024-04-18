@@ -1,5 +1,5 @@
 """
-    These are the serialport allocations for the 4 boards controlling the TECs when connected via USB.
+These are the serialport allocations for the 4 boards controlling the TECs when connected via USB.
 """
 
 # this many TECs in total

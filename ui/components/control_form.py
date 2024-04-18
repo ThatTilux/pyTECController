@@ -4,31 +4,42 @@ import dash_bootstrap_components as dbc
 from app.param_limits import TEMP_INPUT_LIMITS
 
 
-def control_form():
+def create_temperature_input(id, label):
+    """
+    Creates an input group for a temperature input field
+    """
+
     popover_content = f"Expects temperatures between {TEMP_INPUT_LIMITS['min']} and {TEMP_INPUT_LIMITS['max']} with a maximum precision of {TEMP_INPUT_LIMITS['step']}."
 
-    def create_temperature_input(id, label):
-        return dbc.InputGroup(
-            [
-                dbc.InputGroupText(label),
-                dbc.Input(
-                    type="number",
-                    id=id,
-                    min=TEMP_INPUT_LIMITS["min"],
-                    max=TEMP_INPUT_LIMITS["max"],
-                    step=TEMP_INPUT_LIMITS["step"],
-                    style={"maxWidth": 100},
-                ),
-                dbc.InputGroupText("°C", id=id + "-group-text"),
-                dbc.Popover(
-                    popover_content,
-                    target=id + "-group-text",
-                    body=True,
-                    trigger="hover",
-                ),
-            ],
-            className="mb-3",
-        )
+    return html.Div(
+        [
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText(label),
+                    dbc.Input(
+                        type="number",
+                        id=id,
+                        min=TEMP_INPUT_LIMITS["min"],
+                        max=TEMP_INPUT_LIMITS["max"],
+                        step=TEMP_INPUT_LIMITS["step"],
+                        style={"maxWidth": 100},
+                    ),
+                    dbc.InputGroupText("°C", id=id + "-group-text"),
+                    dbc.Popover(
+                        popover_content,
+                        target=id + "-group-text",
+                        body=True,
+                        trigger="hover",
+                    ),
+                ],
+            ),
+            html.Div("", id=f"{id}-error", style={"color": "red"}),
+        ],
+        className="mb-3",
+    )
+
+
+def control_form():
 
     return html.Div(
         [
@@ -43,14 +54,16 @@ def control_form():
                 [
                     dbc.Col(
                         html.Div(
-                            create_temperature_input("input-top-plate", "Top Plate")
+                            children=create_temperature_input(
+                                "input-top-plate", "Top Plate"
+                            )
                         ),
                         width=6,
                         class_name="d-flex justify-content-end",
                     ),
                     dbc.Col(
                         html.Div(
-                            create_temperature_input(
+                            children=create_temperature_input(
                                 "input-bottom-plate", "Bottom Plate"
                             )
                         ),
