@@ -16,6 +16,7 @@ class SystemTECController:
 
     def set_temp(self, plate, temp):
         """Sets the temperature for a plate.
+        Only to be used in Temperature Control mode.
 
         Args:
             plate (string): top or bottom
@@ -23,6 +24,17 @@ class SystemTECController:
         """
         assert plate in ["top", "bottom"]
         self.controllers[plate].set_temp_all(temp)
+        
+    def set_target(self, plate, target):
+        """Sets the temperature for a plate.
+        Only to be used in static current/voltage mode.
+
+        Args:
+            plate (string): top or bottom
+            temp (float): desired temperature
+        """
+        assert plate in ["top", "bottom"]
+        self.controllers[plate].set_target(target)
 
     def enable(self, plate):
         """Enables all TECs on a plate.

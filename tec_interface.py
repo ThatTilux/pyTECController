@@ -47,8 +47,17 @@ class TECInterface:
     def set_temperature(self, plate, temperature):
         """
         Sets the target temperature for the TECs of one of the two plates.
+        Only to be used in Temperature Control mode.
         """
         self.system_controller.set_temp(plate, temperature)
+        
+    def set_target(self, plate, target):
+        """
+        Sets the target temperature for the TECs of one of the two plates.
+        Only to be used in static current/voltage mode.
+        """
+        self.system_controller.set_target(plate, target)
+        
 
     def enable_plate(self, plate):
         """
@@ -85,7 +94,7 @@ class TECInterface:
             case "SET_TEMP":
                 plate = splitted[1]
                 temp = float(splitted[2])
-                self.set_temperature(plate, temp)
+                self.set_target(plate, temp)
             case "DISABLE_ALL":
                 self.disable_all_plates()
             case "ENABLE_ALL":
@@ -111,7 +120,7 @@ class DummyInterface:
         start = self.counter * 8
         self.counter = self.counter + 1
         
-        if start + 8  > len(df):
+        if start + 8  > len(self.df):
             return pd.DataFrame()
         
         return self.df[start : start + 8]
