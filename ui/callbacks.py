@@ -304,10 +304,10 @@ def register_callbacks(app):
 
     # dummy detection
     @app.callback(
-        Output("dummy-mode-heading", "style"),
+        Output("dummy-mode-container", "style"),
         Input("interval-dummy-detection", "n_intervals"),
     )
     def dummy_detection(n):
         if detect_dummy():
-            return {"color": "red", "display": "block"}
+            return {"display": "block"}
         return dash.no_update

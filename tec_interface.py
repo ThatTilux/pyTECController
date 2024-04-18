@@ -146,6 +146,9 @@ if __name__ == "__main__":
 
     # recovered data from last session
     REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
+    
+    # inform UI of dummy mode
+    REDIS_KEY_DUMMY_MODE = "mode"
 
     # save all previous data
     r.delete(REDIS_KEY_PREVIOUS_DATA)
@@ -155,10 +158,18 @@ if __name__ == "__main__":
     # clean up the data channels
     r.delete(REDIS_KEY)
     r.delete(REDIS_KEY_ALL)
+    r.delete(REDIS_KEY_DUMMY_MODE)
+
+    
+    pubsub_dummy_mode = r.pubsub()
+    pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
 
     # listen to ui commands channel
     pubsub = r.pubsub()
     pubsub.subscribe("ui_commands")
+
+
+
 
     # try to connect to the TECs
     # use dummy data if connection unsuccessful
@@ -169,8 +180,6 @@ if __name__ == "__main__":
         print(e)
         tec_interface = DummyInterface("app/dummy_data/dummy.csv")
         dummy = True
-        # inform the UI of dummy mode
-        r.publish("dummy-mode", "True")
 
     # pull data until program is stopped
     while True:
@@ -195,6 +204,8 @@ if __name__ == "__main__":
         # Print dummy-info
         if dummy:
             print("TECs not connected. Using dummy data.")
+            # inform the UI of dummy mode
+            r.publish(REDIS_KEY_DUMMY_MODE, f"True$${time()}")
 
         # sleep to achieve a polling rate of 1Hz
         sleep_time = 1 - (time() - time_start)

@@ -4,6 +4,7 @@ Handles the data store. Dataframes are converted to base64 using parquet and the
 
 import base64
 import io
+from time import time
 import dash
 import redis
 
@@ -27,7 +28,7 @@ REDIS_KEY_STORE_ALL = "tec-data-store-all"
 REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
 
 # channel for notifying the ui in case of dummy mode
-REDIS_KEY_DUMMY_MODE = "dummy-mode"
+REDIS_KEY_DUMMY_MODE = "mode"
 
 pubsub_dummy_mode = r.pubsub()
 pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
@@ -182,6 +183,12 @@ def detect_dummy():
     message = pubsub_dummy_mode.get_message()
     
     # if the backend posted a message to the channel, dummy mode is activated
-    if message:
-        return True
+    while message: 
+        if message["type"] == "message":
+            # the format should be True$$time()
+            data = message["data"].split("$$")
+            # dummy message should not be older than 10s
+            if data[0] == "True" and time() - float(data[1]) <= 10:
+                return True
+        message = pubsub_dummy_mode.get_message()
     return False

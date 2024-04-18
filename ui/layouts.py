@@ -13,10 +13,13 @@ def layout(app):
         [
             html.H1("TEC Central Command Control"),
             # will be displayed in case of dummy-mode
-            html.H3(
-                "Dummy Mode: Could not establish a connection to the TECs. Using dummy data instead.",
+            html.Div(
+                html.H3(
+                    "Dummy Mode: Could not establish a connection to the TECs. Using dummy data instead.",
+                    style={"color": "red"},
+                ),
+                id="dummy-mode-container",
                 style={"display": "none"},
-                id="dummy-mode-heading",
             ),
             # form to control the target temperature and start/stop the TECs
             control_form(),
@@ -35,10 +38,10 @@ def layout(app):
             # interval for dummy detection
             dcc.Interval(
                 id="interval-dummy-detection",
-                interval=5 * 1000,
+                interval=1 * 1000,
                 n_intervals=0,
-                max_intervals=5,
-            ),  # 5s, stop after 5 excecutions
+                max_intervals=20,
+            ),  # 1s, stop after 10 excecutions
             html.Div(
                 id="dummy-output", style={"display": "none"}
             ),  # div for dummy callback outputs
