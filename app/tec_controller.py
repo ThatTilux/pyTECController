@@ -46,9 +46,8 @@ class TECController(object):
 
         self._set_limits()
 
-        #self._set_static_mode()
-        #self.set_current(2.0)
-        #self.enable()
+        # we want to always run in static mode
+        self._set_static_mode()
 
     def _connect(self):
         # open session or use existing one

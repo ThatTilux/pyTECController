@@ -5,7 +5,7 @@ This software serves as a control system for a specialized machine designed to i
 ## Installation
 ### Prerequisites
 - This software is designed for Windows with Python 3.
-- It requires that 4 TEC control boards are connected via USB, each controlling 2 TECs.
+- It requires that 4 TEC-1161-10A-PT100-PIN control boards are connected via USB, each controlling 2 ETX11-12-F1-4040-TA-RT-W6 TECs.
 - It assumes the presence of a top and a bottom plate (4 TECs each).
 
    ```
@@ -82,7 +82,7 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    docker start tec-data-redis
    ```
 2. Optional: Connect the TEC control boards via USB. If none are connected, the software will run with some dummy data.
-3. Start this software by navigating into the root directory of this software and executing the start file:
+3. Start this software by navigating into the root directory and executing the start file:
    ```
    .\start.bat
    ```
