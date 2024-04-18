@@ -8,12 +8,6 @@ This software serves as a control system for a specialized machine designed to i
 - It requires that 4 TEC control boards are connected via USB, each controlling 2 TECs.
 - It assumes the presence of a top and a bottom plate (4 TECs each).
 
-### Set up PYMECOM
-1. Clone or download the PYMECOM files from the repository: [pyMeCom](https://github.com/spomjaksilp/pyMeCom?tab=readme-ov-file)
-2. Optionally, set up a virtual environment (e.g., using Miniconda3) and activate it.
-3. Navigate into the PYMECOM directory and install it with:
-   ```
-   pip install --user .
    ```
 
 ### Install Dependencies

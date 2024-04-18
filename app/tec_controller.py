@@ -46,6 +46,10 @@ class TECController(object):
 
         self._set_limits()
 
+        #self._set_static_mode()
+        #self.set_current(2.0)
+        #self.enable()
+
     def _connect(self):
         # open session or use existing one
         if self.port in TECController._sessions:
@@ -104,6 +108,22 @@ class TECController(object):
                 self.session().stop()
                 self._session = None
 
+    def _set_static_mode(self):
+        """
+        Enables the mode "Static Current/Voltage"
+        """
+        logging.info(
+            "set mode of operation to static current/voltage for channel {}".format(
+                self.channel
+            )
+        )
+        return self.session().set_parameter(
+            parameter_name="Input Selection",
+            value=int(0),
+            address=self.address,
+            parameter_instance=self.channel,
+        )
+
     def set_temp(self, value):
         """
         Set object temperature of channel to desired value.
@@ -118,6 +138,21 @@ class TECController(object):
         )
         return self.session().set_parameter(
             parameter_id=3000,
+            value=value,
+            address=self.address,
+            parameter_instance=self.channel,
+        )
+
+    def set_current(self, value):
+        """
+        Set the current when in mode static current/voltage
+        """
+        assert type(value) is float
+        logging.info(
+            "set static current for channel {} to {} C".format(self.channel, value)
+        )
+        return self.session().set_parameter(
+            parameter_id=2020,
             value=value,
             address=self.address,
             parameter_instance=self.channel,
@@ -164,8 +199,7 @@ def test_connection():
 if __name__ == "__main__":
     pass
 
-
-    #test_connection()
+    # test_connection()
 
     # mc1 = MeerstetterTEC(port=PORTS["TOP_1"], channel=1)
     # mc2 = MeerstetterTEC(port=PORTS["TOP_1"], channel=2)

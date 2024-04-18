@@ -6,6 +6,7 @@ DEFAULT_QUERIES = [
     "target object temperature",
     "output current",
     "output voltage",
+    "input selection"
 ]
 
 
@@ -21,4 +22,6 @@ COMMAND_TABLE = {
     "ramp temperature": [1011, "degC"],
     "current limitation": [2030, "A"],  # max current that will be provided
     "voltage limitation": [2031, "V"],  # max voltage that will be provided
+    "input selection" :[2000, ""], # 0 for static current/voltage, 2 for temperature controller
+    "set current": [2020, "A"], # sets the current when in mode static current/voltage
 }
