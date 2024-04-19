@@ -1,6 +1,5 @@
 import logging
 from time import sleep
-from app.current_control import compute_current
 from app.tec_controller import TECController
 from app.serial_ports import PORTS
 
@@ -42,16 +41,6 @@ class PlateTECController:
         for tec_id in self.tec_controllers:
             tec = self.tec_controllers[tec_id]
             data[tec_id] = tec.get_data()
-
-        # give new current
-        # if "object temperature" in data[0].keys():
-        #     # compute average temperature
-        #     temperatures = [data[tec_id]["object temperature"] for tec_id in data]
-        #     average_temperature = sum(temperatures) / len(temperatures)
-
-        #     new_current = compute_current(self.target, average_temperature)
-        #     if new_current is not None:
-        #         self.set_current_all(new_current)
 
         return data
 
