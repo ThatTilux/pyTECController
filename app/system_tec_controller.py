@@ -88,6 +88,9 @@ class SystemTECController:
         # Concatenate all small DataFrames and set multi-index
         df = pd.concat(frames).set_index(['Plate', 'TEC']).sort_index()
         
+        # add power column
+        df["output power"] = (df["output current"] * df["output voltage"]).abs()
+        
         # add timestamps (ms since last epoch)
         df["timestamp"] = int(datetime.now().timestamp() * 1000) 
             

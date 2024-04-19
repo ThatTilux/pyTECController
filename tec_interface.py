@@ -112,6 +112,11 @@ class DummyInterface:
         # set multi level index
         self.df.set_index(["Plate", "TEC"], inplace=True)
         self.counter = 0
+        
+        # TODO temp until new dummy data
+        if "output power" not in self.df.columns:
+            # add power column
+            self.df["output power"] = (self.df["output current"] * self.df["output voltage"]).abs()
 
     def get_data(self):
         """

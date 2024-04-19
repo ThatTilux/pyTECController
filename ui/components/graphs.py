@@ -516,9 +516,4 @@ def update_graph_sum_generic(_df, parameter, label, unit, fig_id):
 
 
 def update_graph_sum_power(df, fig_id):
-    # Create the column "output power" (absolute of output current * output voltage)
-    # this modifies the original df, but that is fine (-> suppress the warning)
-    with pd.option_context("mode.chained_assignment", None):
-        df["output power"] = (df["output current"] * df["output voltage"]).abs()
-
     return update_graph_sum_generic(df, "output power", "Power", "W", fig_id)

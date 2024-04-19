@@ -47,6 +47,7 @@ def update_measurement_table(_df):
         ("object temperature", 2),
         ("output current", 4),
         ("output voltage", 4),
+        ("output power", 2)
     ]
 
     # Round specified columns
@@ -61,6 +62,7 @@ def update_measurement_table(_df):
         "target object temperature": "Target (°C)",
         "output current": "Current (A)",
         "output voltage": "Voltage (V)",
+        "output power": "Power (W)",
         "timestamp": "Time",
     }
 

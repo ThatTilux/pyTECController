@@ -22,6 +22,7 @@ def download_accordion():
                             },
                             {"label": "Output Current", "value": "output current"},
                             {"label": "Output Voltage", "value": "output voltage"},
+                            {"label": "Output Power", "value": "output power"},
                         ],
                         value=[
                             "loop status",
@@ -29,6 +30,7 @@ def download_accordion():
                             "target object temperature",
                             "output current",
                             "output voltage",
+                            "output power"
                         ],  # Default selected
                     ),
                     dbc.Button(
