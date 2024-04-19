@@ -126,7 +126,7 @@ def graphs_tables_callbacks(app):
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
         MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
         MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
-        MAX_DP_POWER = NUM_TECS * 2 * 60 # 2 min
+        MAX_DP_POWER = NUM_TECS * 10 * 60 # 10 min
 
         # get data
         df_all = get_data_from_store()
