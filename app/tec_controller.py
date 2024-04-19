@@ -12,7 +12,7 @@ import redis
 from serial.serialutil import SerialException
 from app.queries import COMMAND_TABLE, DEFAULT_QUERIES
 from app.serial_ports import PORTS
-from app.param_limits import PARAM_LIMITS
+from app.param_values import PARAM_VALUES
 
 
 class TECController(object):
@@ -44,10 +44,11 @@ class TECController(object):
 
         self._connect()
 
-        self._set_limits()
+        self._set_params()
 
-        # we want to always run in static mode
-        self._set_static_mode()
+        # we want to run in temperature control mode
+        self.set_temperature_control_mode()
+        
 
     def _connect(self):
         # open session or use existing one
@@ -86,12 +87,12 @@ class TECController(object):
                 self._session = None
         return data
 
-    def _set_limits(self):
+    def _set_params(self):
         """
-        Sets limits for certain parameters to prevent damage to components
+        Sets values for certain parameters to prevent damage to components and get optimal behavior.
         """
-        for description in PARAM_LIMITS:
-            param_id, unit, value = PARAM_LIMITS[description]
+        for description in PARAM_VALUES:
+            param_id, unit, value = PARAM_VALUES[description]
             try:
                 # Make sure every param is in COMMAND_TABLE
                 assert param_id, unit == COMMAND_TABLE[description]
@@ -107,18 +108,66 @@ class TECController(object):
                 self.session().stop()
                 self._session = None
 
-    def _set_static_mode(self):
+    def set_static_mode(self):
         """
         Enables the mode "Static Current/Voltage"
         """
+        return self._set_input_selection(0)
+
+    def set_temperature_control_mode(self):
+        """
+        Enables the mode "Temperature Controller"
+        """
+        return self._set_input_selection(2)
+
+    def _set_input_selection(self, value):
+        """
+        Changes the input selection
+        0: Static Current/Voltage
+        1: Live Current/Voltage
+        2: Temperature Control
+        """
+        value = int(value)
+        assert value in [0, 1, 2]
+
         logging.info(
-            "set mode of operation to static current/voltage for channel {}".format(
-                self.channel
-            )
+            "set input selection to {} for channel {}".format(value, self.channel)
         )
         return self.session().set_parameter(
             parameter_name="Input Selection",
-            value=int(0),
+            value=value,
+            address=self.address,
+            parameter_instance=self.channel,
+        )
+        
+    def set_parallel_mode(self):
+        """
+        Sets the mode of operation to parallel with individual load.
+        """
+        return self._set_general_operating_mode(1)
+    
+    def set_individual_mode(self):
+        """
+        Sets the mode of operation to individual.
+        """
+        return self._set_general_operating_mode(0)
+        
+    def _set_general_operating_mode(self, value):
+        """
+        Sets the general operating mode.
+        0: Single (Independent)
+        1: Parallel (CH1 → CH2); Individual Loads
+        2: Parallel: (CH1 → CH2); Common Load
+        """
+        value = int(value)
+        assert value in [0, 1, 2]
+
+        logging.info(
+            "set general operating mode to {} for channel {}".format(value, self.channel)
+        )
+        return self.session().set_parameter(
+            parameter_name="General Operating Mode",
+            value=value,
             address=self.address,
             parameter_instance=self.channel,
         )

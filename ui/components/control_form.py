@@ -1,7 +1,7 @@
 from dash import html
 import dash_bootstrap_components as dbc
 
-from app.param_limits import TEMP_INPUT_LIMITS
+from app.param_values import TEMP_INPUT_LIMITS
 
 
 def create_temperature_input(id, label):

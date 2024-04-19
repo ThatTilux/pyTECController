@@ -6,7 +6,6 @@ DEFAULT_QUERIES = [
     "target object temperature",
     "output current",
     "output voltage",
-    "input selection"
 ]
 
 
@@ -24,4 +23,10 @@ COMMAND_TABLE = {
     "voltage limitation": [2031, "V"],  # max voltage that will be provided
     "input selection" :[2000, ""], # 0 for static current/voltage, 2 for temperature controller
     "set current": [2020, "A"], # sets the current when in mode static current/voltage
+    "kp": [3010, ""], # sets the current when in mode static current/voltage
+    "ti": [3011, ""], # sets the current when in mode static current/voltage
+    "td": [3012, ""], # sets the current when in mode static current/voltage
+    "lower error threshold": [4010, "degC"], #min temp
+    "upper error threshold": [4011, "degC"], #max temp
+    "td": [3012, ""], #max temp
 }

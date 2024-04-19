@@ -27,9 +27,19 @@ TEC_PARAMETERS = [
     {"id": 2031, "name": "Voltage Limitation", "format": "FLOAT32"},
     {"id": 2032, "name": "Current Error Threshold", "format": "FLOAT32"},
     {"id": 2033, "name": "Voltage Error Threshold", "format": "FLOAT32"},
+    {"id": 2040, "name": "General Operating Mode", "format": "INT32"},
     {"id": 2051, "name": "Device Address", "format": "INT32"},
 
     {"id": 3000, "name": "Target Object Temp (Set)", "format": "FLOAT32"},
+    
+    {"id": 3010, "name": "Kp", "format": "FLOAT32"},
+    {"id": 3011, "name": "Ti", "format": "FLOAT32"},
+    {"id": 3012, "name": "Td", "format": "FLOAT32"},
+    
+    {"id": 4010, "name": "Lower Error Threshold", "format": "FLOAT32"},
+    {"id": 4011, "name": "Upper Error Threshold", "format": "FLOAT32"},
+    
+    
     {"id": 6100, "name": "GPIO Function", "format": "INT32"},
     {"id": 6101, "name": "GPIO Level Assignment", "format": "INT32"},
     {"id": 6102, "name": "GPIO Hardware Configuration", "format": "INT32"},
