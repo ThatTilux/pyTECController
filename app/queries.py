@@ -29,4 +29,6 @@ COMMAND_TABLE = {
     "lower error threshold": [4010, "degC"], #min temp
     "upper error threshold": [4011, "degC"], #max temp
     "td": [3012, ""], #max temp
+    "source selection": [6300, ""], # which temperature sensor is used for temperature measurement
+    "delay till restart": [6310, ""], # auto-reset delay on error
 }

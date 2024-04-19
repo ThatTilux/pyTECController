@@ -20,6 +20,8 @@ PARAM_VALUES = {
     "kp": [3010, "", 90],
     "ti": [3011, "", 0],
     "td": [3012, "", 0],
+    "source selection": [6300, "", 0], # always use CH1 temperature sensor
+    # delay till restart is set manually in the plate controller since it only applies to CH1
 }
 
 TEMP_INPUT_LIMITS = {  # limits for the temperature input fields in the UI in °C

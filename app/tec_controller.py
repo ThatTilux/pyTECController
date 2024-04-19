@@ -119,7 +119,23 @@ class TECController(object):
         Enables the mode "Temperature Controller"
         """
         return self._set_input_selection(2)
-
+    
+    def set_delay_till_restart(self, value):
+        """
+        Sets the delay for automatic restart after error (in seconds).
+        0 = disabled.
+        """
+        assert type(value) is float
+        logging.info(
+            "set delay till restart to {} for channel {}".format(value, self.channel)
+        )
+        return self.session().set_parameter(
+            parameter_name="Delay till Restart",
+            value=value,
+            address=self.address,
+            parameter_instance=self.channel,
+        )
+        
     def _set_input_selection(self, value):
         """
         Changes the input selection
