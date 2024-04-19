@@ -3,7 +3,7 @@ import dash
 import pandas as pd
 
 from app.serial_ports import NUM_TECS
-from ui.components.graphs import format_timestamps, update_graph_all_current, update_graph_all_temperature, update_graph_all_voltage, update_graph_object_temperature
+from ui.components.graphs import format_timestamps, update_graph_all_current, update_graph_all_temperature, update_graph_all_voltage, update_graph_object_temperature, update_graph_sum_power
 from ui.data_store import get_data_from_store
 
 
@@ -109,6 +109,8 @@ def graphs_tables_callbacks(app):
             Output("graph-all-voltage-2", "figure"),
             Output("graph-all-temperature", "figure"),
             Output("graph-all-temperature-2", "figure"),
+            Output("graph-sum-power", "figure"),
+            Output("graph-sum-power-2", "figure"),
         ],
         [
             Input("interval-component", "n_intervals"),
@@ -124,12 +126,13 @@ def graphs_tables_callbacks(app):
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
         MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
         MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
+        MAX_DP_POWER = NUM_TECS * 2 * 60 # 2 min
 
         # get data
         df_all = get_data_from_store()
 
         if df_all is None:
-            return (dash.no_update,) * 9
+            return (dash.no_update,) * 11
 
         # update table
         # get the most recent measurement
@@ -138,7 +141,7 @@ def graphs_tables_callbacks(app):
 
         # If graphs are paused, do not update them
         if is_graph_paused(n_clicks):
-            return (table_data, table_columns) + (dash.no_update,) * 7
+            return (table_data, table_columns) + (dash.no_update,) * 9
 
         # Update graphs
 
@@ -174,27 +177,41 @@ def graphs_tables_callbacks(app):
             if active_tab == "tab-temperature"
             else dash.no_update
         )
+        graph_sum_power = (
+            update_graph_sum_power(
+                df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power"
+            )
+            if active_tab == "tab-power"
+            else dash.no_update
+        )
 
         # tab-2
         graph_all_current2 = (
             update_graph_all_current(
-                df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current2"
+                df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current-2"
             )
             if active_tab_2 == "tab-current"
             else dash.no_update
         )
         graph_all_voltage2 = (
             update_graph_all_voltage(
-                df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage2"
+                df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage-2"
             )
             if active_tab_2 == "tab-voltage"
             else dash.no_update
         )
         graph_all_temperature2 = (
             update_graph_all_temperature(
-                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature2"
+                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature-2"
             )
             if active_tab_2 == "tab-temperature"
+            else dash.no_update
+        )
+        graph_sum_power2 = (
+            update_graph_sum_power(
+                df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power-2"
+            )
+            if active_tab_2 == "tab-power"
             else dash.no_update
         )
 
@@ -208,4 +225,6 @@ def graphs_tables_callbacks(app):
             graph_all_voltage2,
             graph_all_temperature,
             graph_all_temperature2,
+            graph_sum_power,
+            graph_sum_power2,
         )

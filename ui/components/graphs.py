@@ -1,5 +1,4 @@
 import dash_bootstrap_components as dbc
-import dash
 from dash import html, dcc
 from dash.dependencies import Output, Input
 import pandas as pd
@@ -47,6 +46,11 @@ def graphs(app):
                         graph_with_config_and_controls(app, "graph-all-voltage"),
                         None,
                     ),
+                    (
+                        "Power",
+                        graph_with_config_and_controls(app, "graph-sum-power"),
+                        None,
+                    ),
                 ],
             ),
             html.Div(
@@ -69,6 +73,11 @@ def graphs(app):
                         (
                             "Voltage",
                             graph_with_config_and_controls(app, "graph-all-voltage-2"),
+                            None,
+                        ),
+                        (
+                            "Power",
+                            graph_with_config_and_controls(app, "graph-sum-power-2"),
                             None,
                         ),
                     ],
@@ -462,3 +471,54 @@ def update_graph_all_temperature(df, fig_id):
     return update_graph_all_generic(
         df, "object temperature", "Temperature", "°C", fig_id
     )
+
+
+def update_graph_sum_generic(_df, parameter, label, unit, fig_id):
+    """
+    Generic function for updating a graph displaying the sum of some parameter.
+
+    parameter: name of the parameter, e.g. "output current"
+    label: label to display, e.g. "Current"
+    unit: label of unit, e.g. "A"
+    """
+
+    # reset multiindex
+    df = _df.reset_index()
+
+    # Keep only necessary columns
+    df = df[[parameter, "timestamp"]]
+
+    # Group by timestamp and take the sum of the parameter
+    df = df.groupby("timestamp").sum().reset_index()
+
+    # format timestamps
+    format_timestamps(df)
+
+    fig = px.line(
+        df,
+        x="timestamp",
+        y=parameter,
+        labels={
+            "timestamp": "Time (hh:mm:ss)",
+            parameter: f"{label} ({unit})",
+        },
+        title=f"Sum of {label} from all TECs",
+        markers=True,
+    )
+
+    # set yaxis
+    set_yaxis(fig_id=fig_id, fig=fig)
+
+    # force the plot to always only have 2 ticks
+    _force_two_ticks(fig, df)
+
+    return fig
+
+
+def update_graph_sum_power(df, fig_id):
+    # Create the column "output power" (absolute of output current * output voltage)
+    # this modifies the original df, but that is fine (-> suppress the warning)
+    with pd.option_context("mode.chained_assignment", None):
+        df["output power"] = (df["output current"] * df["output voltage"]).abs()
+
+    return update_graph_sum_generic(df, "output power", "Power", "W", fig_id)
