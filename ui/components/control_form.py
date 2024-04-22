@@ -2,6 +2,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 
 from app.param_values import TEMP_INPUT_LIMITS
+from ui.components.control_box import control_box
 
 
 def create_temperature_input(id, label):
@@ -41,15 +42,9 @@ def create_temperature_input(id, label):
 
 def control_form():
 
-    return html.Div(
-        [
-            dbc.Row(
-                dbc.Col(
-                    html.H4("Set Target Temperatures", style={"text-align": "center"}),
-                    width={"size": 6, "offset": 3},
-                ),
-                className="mb-4",
-            ),
+    return control_box(
+        heading="Set Target Temperature",
+        children=[
             dbc.Row(
                 [
                     dbc.Col(
@@ -111,6 +106,4 @@ def control_form():
                 className="mt-3",
             ),
         ],
-        className="mb-3 p-4",
-        style={"border": "1px solid #ddd", "borderRadius": "5px"},
     )
