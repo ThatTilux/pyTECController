@@ -43,14 +43,14 @@ def button_callbacks(app):
     # when the pause graphs btn is pressed
     # the actual pausing happens in the callback that updates the graphs
     @app.callback(
-        Output("btn-pause-graphs", "children"),
-        [Input("btn-pause-graphs", "n_clicks")],
+        [Output("btn-pause-graphs", "children"), Output("btn-pause-graphs-2", "children")],
+        [Input("btn-pause-graphs", "n_clicks"), Input("btn-pause-graphs-2", "n_clicks")],
         prevent_initial_call=True,
     )
-    def handle_pause_graphs(n_clicks):
-        btn_label = "Resume Graphs" if is_graph_paused(n_clicks) else "Freeze Graphs"
+    def handle_pause_graphs(n_clicks, n_clicks_2):
+        btn_label = "Resume Graphs" if is_graph_paused(n_clicks, n_clicks_2) else "Freeze Graphs"
 
-        return btn_label
+        return btn_label, btn_label
 
     # when the stop all tecs btn is pressed
     @app.callback(
@@ -65,13 +65,13 @@ def button_callbacks(app):
     # when the start btn is pressed
     @app.callback(
         [
-            Output("input-top-plate-error", "children"),
-            Output("input-bottom-plate-error", "children"),
+            Output({"type": "set-target-temp-error", "index": "input-top-plate"}, "children"),
+            Output({"type": "set-target-temp-error", "index": "input-bottom-plate"}, "children"),
         ],
         [
             Input("btn-start-tecs", "n_clicks"),
-            State("input-top-plate", "value"),
-            State("input-bottom-plate", "value"),
+            State({"type": "set-target-temp", "index": "input-top-plate"}, "value"),
+            State({"type": "set-target-temp", "index": "input-bottom-plate"}, "value"),
         ],
         prevent_initial_call=True,
     )

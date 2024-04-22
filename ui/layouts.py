@@ -6,6 +6,7 @@ from ui.components.control_form import control_form
 from ui.components.data_table import data_table
 from ui.components.download_accordion import download_accordion
 from ui.components.graphs import graphs
+from ui.components.sequence_control_box import sequence_control_box
 
 
 def layout(app):
@@ -23,6 +24,8 @@ def layout(app):
             ),
             # form to control the target temperature and start/stop the TECs
             control_form(),
+            # creation and starting of sequences
+            sequence_control_box(),
             # shows the most recent measurement
             data_table(),
             # various graphs that display the data
@@ -42,9 +45,8 @@ def layout(app):
                 n_intervals=0,
                 max_intervals=5,
             ),  # 1s, stop after 10 excecutions
-            html.Div(
-                id="dummy-output", style={"display": "none"}
-            ),  # div for dummy callback outputs
+            # store for holding the indices of visible rows in the sequence manager
+            dcc.Store(id="visible-sequence-rows", data=[0]),
         ],
         class_name="pt-2",
     )

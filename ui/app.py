@@ -8,8 +8,8 @@ from ui.layouts import layout
 app = dash.Dash(
     __name__,
     title="TEC Controller",
-    update_title=None, # prevents the Updating... title
-    external_stylesheets=[dbc.themes.BOOTSTRAP], # use bootstrap default theme
+    update_title=None,  # prevents the Updating... title
+    external_stylesheets=[dbc.themes.BOOTSTRAP],  # use bootstrap default theme
 )
 app.layout = layout(app)
 
@@ -23,4 +23,5 @@ register_callbacks(app)
 if __name__ == "__main__":
     # disable the dev tools in a production environment
     debug = os.getenv("FLASK_ENV") == "development"
-    app.run_server(debug=debug)
+
+    app.run(debug=debug)

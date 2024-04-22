@@ -1,21 +1,102 @@
+from time import time
 from dash.dependencies import Output, Input, State
 import dash
 import pandas as pd
 
 from app.serial_ports import NUM_TECS
-from ui.components.graphs import format_timestamps, update_graph_all_current, update_graph_all_temperature, update_graph_all_voltage, update_graph_object_temperature, update_graph_sum_power
+from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
+from ui.components.graphs import (
+    format_timestamps,
+    update_graph_all_current,
+    update_graph_all_temperature,
+    update_graph_all_voltage,
+    update_graph_object_temperature,
+    update_graph_sum_power,
+)
 from ui.data_store import get_data_from_store
+from ui.sequence_manager import SequenceManager
 
 
-def is_graph_paused(n_clicks):
+# the sequence manager
+sequence_manager = SequenceManager(temperature_window=0.5)
+
+
+def set_sequence(sequence_values):
     """
-    Determines whether the graphs are paused based on the number of clicks of the Pause Graphs btn.
-    """
+    Sets the sequence in the sequence manager and starts all TECs.
 
+    Args:
+            sequence_values (list[(float, float, float, float)]): List of tuples with values for top_target, bottom_target, num_steps, time_sleep
+    """
+    # pass the sequence
+    sequence_manager.set_sequence(sequence_values)
+
+    # get the first targets
+    top_target = sequence_values[0][0]
+    bottom_target = sequence_values[0][1]
+
+    # set the targets
+    set_temperature(plate="top", temp=float(top_target))
+    set_temperature(plate="bottom", temp=float(bottom_target))
+
+    # enable all
+    enable_all_plates()
+
+
+def handle_sequence_instructions(instructions):
+    """
+    Handles instructions from the sequence manager.
+    """
+    # None = noop
+    if instructions:
+        if instructions[0] == "stop":
+            # trigger the stop
+            disable_all_plates()
+        elif instructions[0] == "target":
+            # get the targets
+            top_target = instructions[1][0]
+            bottom_target = instructions[1][1]
+
+            # set the targets
+            set_temperature(plate="top", temp=float(top_target))
+            set_temperature(plate="bottom", temp=float(bottom_target))
+
+
+def get_avg_temps(df):
+    """
+    Will return the average temperatures for the top and bottom plate.
+    Format: top_avg, bottom_avg
+    """
+    if "object temperature" not in df.columns:
+        raise ValueError("DataFrame must include an 'object temperature' column")
+
+    # Group by 'Plate' level calculate the mean of 'object temperature' for each group
+    avg_temps = df["object temperature"].groupby(level="Plate").mean()
+
+    # Extract the average temperatures for 'top' and 'bottom'
+    top_avg = avg_temps.loc["top"]
+    bottom_avg = avg_temps.loc["bottom"]
+
+    return top_avg, bottom_avg
+
+
+def stop_sequence():
+    """
+    Aborts the current sequence.
+    """
+    sequence_manager.delete_sequence()
+
+
+def is_graph_paused(n_clicks, n_clicks_2):
+    """
+    Determines whether the graphs are paused based on the number of clicks of the two Pause Graphs btns.
+    """
     if n_clicks is None:
-        return False
+        n_clicks = 0
+    if n_clicks_2 is None:
+        n_clicks_2 = 0
 
-    is_paused = n_clicks % 2 == 1
+    is_paused = (n_clicks + n_clicks_2) % 2 == 1
 
     return is_paused
 
@@ -47,7 +128,7 @@ def update_measurement_table(_df):
         ("object temperature", 2),
         ("output current", 4),
         ("output voltage", 4),
-        ("output power", 2)
+        ("output power", 2),
     ]
 
     # Round specified columns
@@ -104,6 +185,7 @@ def graphs_tables_callbacks(app):
         [
             Output("tec-data-table", "data"),
             Output("tec-data-table", "columns"),
+            Output("sequence-status-text", "children"),
             Output("graph-object-temperature", "figure"),
             Output("graph-all-current", "figure"),
             Output("graph-all-current-2", "figure"),
@@ -117,33 +199,53 @@ def graphs_tables_callbacks(app):
         [
             Input("interval-component", "n_intervals"),
             State("btn-pause-graphs", "n_clicks"),
+            State("btn-pause-graphs-2", "n_clicks"),
             State("graph-tabs", "active_tab"),
             State("graph-tabs-2", "active_tab"),
         ],
         prevent_initial_call=True,
     )
-    def update_components_from_store(n, n_clicks, active_tab, active_tab_2):
+    def update_components_from_store(n, n_clicks, n_clicks_2, active_tab, active_tab_2):
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
         MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
         MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
-        MAX_DP_POWER = NUM_TECS * 10 * 60 # 10 min
+        MAX_DP_POWER = NUM_TECS * 10 * 60  # 10 min
 
         # get data
         df_all = get_data_from_store()
 
         if df_all is None:
-            return (dash.no_update,) * 11
+            return (dash.no_update,) * 12
 
         # update table
         # get the most recent measurement
         df_recent = df_all.tail(NUM_TECS)
         table_data, table_columns = update_measurement_table(df_recent)
 
+        # get the current avergae temperatures
+        avg_top, avg_bottom = get_avg_temps(df_recent)
+
+        # get new instructions from the sequence manager
+        instructions = sequence_manager.get_instructions(avg_top, avg_bottom)
+        handle_sequence_instructions(instructions)
+
+        # get the sequence status
+        sequence_status = (
+            sequence_manager.get_status() + f"top: {avg_top}, bottom: {avg_bottom}"
+        )
+
+        # TODO REMOVE
+        sequence_status = sequence_status + " " + str(instructions)
+
         # If graphs are paused, do not update them
-        if is_graph_paused(n_clicks):
-            return (table_data, table_columns) + (dash.no_update,) * 9
+        if is_graph_paused(n_clicks, n_clicks_2):
+            return (
+                table_data,
+                table_columns,
+                sequence_status,
+            ) + (dash.no_update,) * 9
 
         # Update graphs
 
@@ -180,9 +282,7 @@ def graphs_tables_callbacks(app):
             else dash.no_update
         )
         graph_sum_power = (
-            update_graph_sum_power(
-                df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power"
-            )
+            update_graph_sum_power(df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power")
             if active_tab == "tab-power"
             else dash.no_update
         )
@@ -220,6 +320,7 @@ def graphs_tables_callbacks(app):
         return (
             table_data,
             table_columns,
+            sequence_status,
             graph_object_temp,
             graph_all_current,
             graph_all_current2,

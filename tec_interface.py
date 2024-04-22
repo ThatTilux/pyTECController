@@ -50,14 +50,13 @@ class TECInterface:
         Only to be used in Temperature Control mode.
         """
         self.system_controller.set_temp(plate, temperature)
-        
+
     def set_target(self, plate, target):
         """
         Sets the target temperature for the TECs of one of the two plates.
         Only to be used in static current/voltage mode.
         """
         self.system_controller.set_target(plate, target)
-        
 
     def enable_plate(self, plate):
         """
@@ -112,11 +111,6 @@ class DummyInterface:
         # set multi level index
         self.df.set_index(["Plate", "TEC"], inplace=True)
         self.counter = 0
-        
-        # TODO temp until new dummy data
-        if "output power" not in self.df.columns:
-            # add power column
-            self.df["output power"] = (self.df["output current"] * self.df["output voltage"]).abs()
 
     def get_data(self):
         """
@@ -124,10 +118,10 @@ class DummyInterface:
         """
         start = self.counter * 8
         self.counter = self.counter + 1
-        
-        if start + 8  > len(self.df):
+
+        if start + 8 > len(self.df):
             return pd.DataFrame()
-        
+
         return self.df[start : start + 8]
 
     def handle_message(self, message):
@@ -151,7 +145,7 @@ if __name__ == "__main__":
 
     # recovered data from last session
     REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
-    
+
     # inform UI of dummy mode
     REDIS_KEY_DUMMY_MODE = "mode"
 
@@ -165,16 +159,12 @@ if __name__ == "__main__":
     r.delete(REDIS_KEY_ALL)
     r.delete(REDIS_KEY_DUMMY_MODE)
 
-    
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
 
     # listen to ui commands channel
     pubsub = r.pubsub()
     pubsub.subscribe("ui_commands")
-
-
-
 
     # try to connect to the TECs
     # use dummy data if connection unsuccessful
