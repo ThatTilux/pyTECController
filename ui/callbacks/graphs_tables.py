@@ -7,15 +7,16 @@ from ui.components.graphs import format_timestamps, update_graph_all_current, up
 from ui.data_store import get_data_from_store
 
 
-def is_graph_paused(n_clicks):
+def is_graph_paused(n_clicks, n_clicks_2):
     """
-    Determines whether the graphs are paused based on the number of clicks of the Pause Graphs btn.
+    Determines whether the graphs are paused based on the number of clicks of the two Pause Graphs btns.
     """
-
     if n_clicks is None:
-        return False
-
-    is_paused = n_clicks % 2 == 1
+            n_clicks = 0
+    if n_clicks_2 is None:
+        n_clicks_2 = 0 
+        
+    is_paused = (n_clicks + n_clicks_2) % 2 == 1
 
     return is_paused
 
@@ -117,12 +118,13 @@ def graphs_tables_callbacks(app):
         [
             Input("interval-component", "n_intervals"),
             State("btn-pause-graphs", "n_clicks"),
+            State("btn-pause-graphs-2", "n_clicks"),
             State("graph-tabs", "active_tab"),
             State("graph-tabs-2", "active_tab"),
         ],
         prevent_initial_call=True,
     )
-    def update_components_from_store(n, n_clicks, active_tab, active_tab_2):
+    def update_components_from_store(n, n_clicks, n_clicks_2, active_tab, active_tab_2):
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
@@ -142,7 +144,7 @@ def graphs_tables_callbacks(app):
         table_data, table_columns = update_measurement_table(df_recent)
 
         # If graphs are paused, do not update them
-        if is_graph_paused(n_clicks):
+        if is_graph_paused(n_clicks, n_clicks_2):
             return (table_data, table_columns) + (dash.no_update,) * 9
 
         # Update graphs

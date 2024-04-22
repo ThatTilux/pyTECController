@@ -23,4 +23,5 @@ register_callbacks(app)
 if __name__ == "__main__":
     # disable the dev tools in a production environment
     debug = os.getenv("FLASK_ENV") == "development"
+
     app.run_server(debug=debug)
