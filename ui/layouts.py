@@ -40,7 +40,7 @@ def layout(app):
                 id="interval-dummy-detection",
                 interval=1 * 1000,
                 n_intervals=0,
-                max_intervals=20,
+                max_intervals=5,
             ),  # 1s, stop after 10 excecutions
             html.Div(
                 id="dummy-output", style={"display": "none"}

@@ -148,6 +148,7 @@ def graph_with_config_and_controls(app, id):
             Output(f"{id}-yaxis-btn-toggle", "children"),
         ],
         Input(f"{id}-yaxis-btn-toggle", "n_clicks"),
+        prevent_initial_call=True
     )
     def toggle_yaxis_container(n_clicks):
         display = "none"
