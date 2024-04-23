@@ -24,4 +24,8 @@ if __name__ == "__main__":
     # disable the dev tools in a production environment
     debug = os.getenv("FLASK_ENV") == "development"
 
+<<<<<<< HEAD
     app.run(debug=debug)
+=======
+    app.run_server(debug=debug)
+>>>>>>> 38be49382130558460cd464eb41b93449d145c8d
