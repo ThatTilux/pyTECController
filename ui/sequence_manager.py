@@ -22,6 +22,8 @@ class SequenceManager:
         self.sequence = Sequence(sequence_values, self.temperature_window)
         self.finished = False
         self.paused = False
+        # when this is set to True, the next call of get_instructions will skip to the next step
+        self.skip = False
 
     def get_instructions(self, top_temp, bottom_temp):
         """
@@ -36,8 +38,12 @@ class SequenceManager:
 
         # get new instructions
         new_top_target, new_bottom_target = self.sequence.get_new_targets(
-            top_temp, bottom_temp
+            top_temp, bottom_temp, self.skip
         )
+
+        if self.skip:
+            self.skip = False
+
         # for None, there are no new instructions
         if new_top_target == None:
             return None
@@ -58,11 +64,11 @@ class SequenceManager:
         # check if sequence is finished
         if self.finished:
             return "Status: Sequence finished."
-        
+
         # check for paused
         if self.paused:
             return "Status: Sequence paused."
-        
+
         # if sequence has not been set yet
         if self.sequence is None:
             return "Status: Waiting for sequence."
@@ -85,19 +91,25 @@ class SequenceManager:
             status = f"Status: Waiting to reach a top temperature of {top_range} and a bottom temperature of {bottom_range}."
 
         return status
-    
+
     def delete_sequence(self):
         """
         Deletes the sequences.
         """
         self.sequence = None
-        
+
     def set_paused(self, value):
         """
         Pauses / Unpauses the sequece. The sequence will not advance to the next step when it is paused.
         """
         assert type(value) is bool
         self.paused = value
+
+    def skip_step(self):
+        """
+        The sequence will skip the current step.
+        """
+        self.skip = True
 
 
 class Sequence:
@@ -185,7 +197,7 @@ class Sequence:
                 return self.sequence[0]
         return None
 
-    def get_new_targets(self, top_temp, bottom_temp):
+    def get_new_targets(self, top_temp, bottom_temp, skip=False):
         """
         Checks if the current sequence element is finished. If yes, move on to the next.
         Returns None or the new target temperatures or -1 when the sequence is finished.
@@ -194,10 +206,12 @@ class Sequence:
         # check if current is None
         if self._get_current_sequence_element() is None:
             # indicate the sequence is finished
-            return -1, -1 
-        
-        # check if the sequence element is finished
-        if self._get_current_sequence_element().is_finished(top_temp, bottom_temp):
+            return -1, -1
+
+        # check if the sequence element is finished or a skip was set
+        if skip or self._get_current_sequence_element().is_finished(
+            top_temp, bottom_temp
+        ):
             # move on to the next element
             next = self._next_sequence_element()
             if next is None:
@@ -280,6 +294,6 @@ class SequenceElement:
         Returns the target time
         """
         return self.time_target
-    
+
     def reset_time(self):
         self.time_unsuccess = time()

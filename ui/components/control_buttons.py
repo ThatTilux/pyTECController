@@ -70,6 +70,13 @@ def control_sequence_buttons():
                                 id="btn-pause-sequence",
                                 color="secondary",
                                 outline=True,
+                                style={"margin-right": "0.5em"},
+                            ),
+                            dbc.Button(
+                                "Skip Step",
+                                id="btn-skip-sequence-step",
+                                color="secondary",
+                                outline=True,
                             ),
                         ]
                     ),
@@ -85,6 +92,13 @@ def control_sequence_buttons():
                 dbc.Popover(
                     "The sequence will not advance to the next step while it is paused.",
                     target="btn-pause-sequence",
+                    body=True,
+                    placement="bottom",
+                    trigger="hover",
+                ),
+                dbc.Popover(
+                    "Skip to the next step of the sequence.",
+                    target="btn-skip-sequence-step",
                     body=True,
                     placement="bottom",
                     trigger="hover",

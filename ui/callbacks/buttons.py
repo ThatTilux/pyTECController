@@ -3,7 +3,7 @@ from dash.dependencies import Output, Input, State
 from dash import dcc
 import dash
 
-from ui.callbacks.graphs_tables import is_graph_paused, set_pause_sequence
+from ui.callbacks.graphs_tables import is_graph_paused, set_pause_sequence, skip_sequence_step
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.data_store import get_data_for_download, get_recovered_data
 
@@ -56,7 +56,8 @@ def button_callbacks(app):
     # callback for when the pause sequence btn is pressed
     @app.callback(
         Output("btn-pause-sequence", "children"), 
-        Input("btn-pause-sequence", "n_clicks")
+        Input("btn-pause-sequence", "n_clicks"),
+        prevent_initial_call=True
     )
     def handle_pause_sequence(n_clicks):
         paused = n_clicks % 2 == 1
@@ -68,7 +69,18 @@ def button_callbacks(app):
         if paused:
             return "Resume Sequence"
         return "Pause Sequence"
+    
+    # callback for when the skip sequence btn is pressed
+    @app.callback(
+        Output("btn-skip-sequence-step", "n_clicks"), # dummy  
+        Input("btn-skip-sequence-step", "n_clicks"),
+        prevent_initial_call=True
+    )
+    def skip_step(n_clicks):
+        # send the skip
+        skip_sequence_step()
         
+        return dash.no_update
 
     # when the stop all tecs btn is pressed
     @app.callback(

@@ -79,7 +79,7 @@ def layout(app):
                 id="visible-sequence-rows", data=PRECONFIGURED_SEQUENCE_DATA
             ),  # keys are strings since dash store will convert them to str anywys
             # hidden div to track whether the app is ready to be displayed
-            html.Div(id="initial-load", style={"display": "none"}),
+            html.Div(id="initial-load", style={"display": "none"})
         ],
         class_name="pt-2",
     )

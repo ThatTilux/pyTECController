@@ -41,12 +41,21 @@ def set_sequence(sequence_values):
 
     # enable all
     enable_all_plates()
-    
+
+
 def set_pause_sequence(value):
     """
     Pauses / Unpauses the sequence
     """
     sequence_manager.set_paused(value)
+
+
+def skip_sequence_step():
+    """
+    Skips the current step of the sequence.
+    """
+    sequence_manager.skip_step()
+
 
 def handle_sequence_instructions(instructions):
     """
@@ -209,11 +218,13 @@ def graphs_tables_callbacks(app):
             State("btn-pause-graphs-2", "n_clicks"),
             State("graph-tabs", "active_tab"),
             State("graph-tabs-2", "active_tab"),
-            State("initial-load", "children")
+            State("initial-load", "children"),
         ],
         prevent_initial_call=True,
     )
-    def update_components_from_store(n, n_clicks, n_clicks_2, active_tab, active_tab_2, is_app_loaded):
+    def update_components_from_store(
+        n, n_clicks, n_clicks_2, active_tab, active_tab_2, is_app_loaded
+    ):
 
         # notify the spinnder that the app has loaded and is ready for display
         if is_app_loaded:
