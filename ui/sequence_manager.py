@@ -8,6 +8,7 @@ class SequenceManager:
 
     def __init__(self, temperature_window):
         self.sequence = None
+        self.finished = False
         # set temperature window
         self.temperature_window = temperature_window
 
@@ -18,6 +19,7 @@ class SequenceManager:
             sequence_values (list[(float, float, float, float)]): List of tuples with values for top_target, bottom_target, num_steps, time_sleep
         """
         self.sequence = Sequence(sequence_values, self.temperature_window)
+        self.finished = False
 
     def get_instructions(self, top_temp, bottom_temp):
         """
@@ -40,6 +42,7 @@ class SequenceManager:
 
         # on -1, stop and clear the sequence
         if float(new_top_target) == -1.0:
+            self.finished = True
             self.sequence = None
             return ("stop", None)
 
@@ -50,6 +53,10 @@ class SequenceManager:
         """
         Returns a string with the current status.
         """
+        # check if sequence is finished
+        if self.finished:
+            return "Status: Sequence finished."
+        
         # if sequence has not been set yet
         if self.sequence is None:
             return "Status: Waiting for sequence."
