@@ -187,6 +187,7 @@ def graphs_tables_callbacks(app):
             Output("tec-data-table", "data"),
             Output("tec-data-table", "columns"),
             Output("sequence-status-text", "children"),
+            Output("initial-load", "children"),
             Output("graph-object-temperature", "figure"),
             Output("graph-all-current", "figure"),
             Output("graph-all-current-2", "figure"),
@@ -203,10 +204,17 @@ def graphs_tables_callbacks(app):
             State("btn-pause-graphs-2", "n_clicks"),
             State("graph-tabs", "active_tab"),
             State("graph-tabs-2", "active_tab"),
+            State("initial-load", "children")
         ],
         prevent_initial_call=True,
     )
-    def update_components_from_store(n, n_clicks, n_clicks_2, active_tab, active_tab_2):
+    def update_components_from_store(n, n_clicks, n_clicks_2, active_tab, active_tab_2, is_app_loaded):
+
+        # notify the spinnder that the app has loaded and is ready for display
+        if is_app_loaded:
+            app_loading_status = dash.no_update
+        else:
+            app_loading_status = "loaded"
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
@@ -218,7 +226,7 @@ def graphs_tables_callbacks(app):
         df_all = get_data_from_store()
 
         if df_all is None:
-            return (dash.no_update,) * 12
+            return (dash.no_update,) * 13
 
         # update table
         # get the most recent measurement
@@ -241,6 +249,7 @@ def graphs_tables_callbacks(app):
                 table_data,
                 table_columns,
                 sequence_status,
+                app_loading_status,
             ) + (dash.no_update,) * 9
 
         # Update graphs
@@ -317,6 +326,7 @@ def graphs_tables_callbacks(app):
             table_data,
             table_columns,
             sequence_status,
+            app_loading_status,
             graph_object_temp,
             graph_all_current,
             graph_all_current2,

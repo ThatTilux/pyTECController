@@ -15,3 +15,16 @@ def misc_callbacks(app):
             # show the warning that dummy mode is on
             return {"display": "block"}
         return dash.no_update
+
+    # spinner for initial load
+    @app.callback(
+        [Output("app-main-content", "style"), Output("initial-load-spinner", "style")],
+        Input("initial-load", "children"),
+        prevent_initial_call=False,
+    )
+    def toggle_spinner(is_loaded):
+        if is_loaded:
+            return {"display": "block"}, {
+                "display": "none"
+            }  # Shot app content after initial load
+        return {"display": "none"}, {"display": "block"}  # hide app content
