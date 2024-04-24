@@ -67,6 +67,7 @@ def control_sequence_buttons():
                             ),
                             dbc.Button(
                                 "Pause Sequence",
+                                disabled=True,
                                 id="btn-pause-sequence",
                                 color="secondary",
                                 outline=True,
@@ -74,6 +75,7 @@ def control_sequence_buttons():
                             ),
                             dbc.Button(
                                 "Skip Step",
+                                disabled=True,
                                 id="btn-skip-sequence-step",
                                 color="secondary",
                                 outline=True,

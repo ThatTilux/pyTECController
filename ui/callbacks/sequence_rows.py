@@ -95,6 +95,8 @@ def sequence_rows_callbacks(app):
             Output({"type": "sequence-row-num-steps", "index": ALL}, "disabled"),
             Output({"type": "sequence-row-time-sleep", "index": ALL}, "disabled"),
             Output("btn-submit-sequence", "disabled"),
+            Output("btn-pause-sequence", "disabled"),
+            Output("btn-skip-sequence-step", "disabled"),
         ],
         [
             Input("btn-submit-sequence", "n_clicks"),
@@ -152,7 +154,7 @@ def sequence_rows_callbacks(app):
             # tell the sequence manager
             stop_sequence()
             # enable all input fields and clear errors
-            return *error_messages, *disable_states, btn_submit_disabled
+            return *error_messages, *disable_states, btn_submit_disabled, not btn_submit_disabled, not btn_submit_disabled
 
         # this will be used to create a sequence
         results = []
@@ -197,4 +199,4 @@ def sequence_rows_callbacks(app):
             if len(results) > 0:
                 set_sequence(results)
 
-        return *error_messages, *disable_states, btn_submit_disabled
+        return *error_messages, *disable_states, btn_submit_disabled, not btn_submit_disabled, not btn_submit_disabled
