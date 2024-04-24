@@ -126,6 +126,7 @@ def update_measurement_table(_df):
     # Columns to round with the number of decimals
     columns_to_round = [
         ("object temperature", 2),
+        ("target object temperature", 2),
         ("output current", 4),
         ("output voltage", 4),
         ("output power", 2),

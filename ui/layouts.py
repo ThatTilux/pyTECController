@@ -22,10 +22,14 @@ def layout(app):
                 id="dummy-mode-container",
                 style={"display": "none"},
             ),
-            # form to control the target temperature and start/stop the TECs
-            control_form(),
-            # creation and starting of sequences
-            sequence_control_box(),
+            dbc.Tabs(
+                [
+                    # form to control the target temperature and start/stop the TECs
+                    dbc.Tab(html.Div(control_form(), className="mt-3"), label="Temperature Control"),
+                    # creation and starting of sequences
+                    dbc.Tab(html.Div(sequence_control_box(), className="mt-3"), label="Sequence"),
+                ]
+            ),
             # shows the most recent measurement
             data_table(),
             # various graphs that display the data
