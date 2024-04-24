@@ -17,9 +17,10 @@ def sequence_rows_callbacks(app):
     )
     def render_rows(rows_data):
         row_keys = list(map(int, rows_data.keys()))  # Convert keys to integers
-        
+
         return [
-            sequence_input_row("sequence-row", row_id=i, data=rows_data[str(i)]) for i in row_keys
+            sequence_input_row("sequence-row", row_id=i, data=rows_data[str(i)])
+            for i in row_keys
         ]
 
     # updates the store with the row indices based on pressed buttons
@@ -69,7 +70,12 @@ def sequence_rows_callbacks(app):
             row_index = action_info["index"]
             # get the action (add/remove)
             if action_info["action"] == "add":
-                rows_data[str(max(row_keys) + 1)] = [None, None, None, None]  # Append new row index
+                rows_data[str(max(row_keys) + 1)] = [
+                    None,
+                    None,
+                    None,
+                    None,
+                ]  # Append new row index
             elif action_info["action"] == "remove":
                 if len(rows_data) > 1:  # Ensure at least one row remains
                     rows_data.pop(str(row_index))
@@ -161,7 +167,12 @@ def sequence_rows_callbacks(app):
                 time_sleep_values,
             )
         ):
-            if None in [top_temp, bottom_temp, num_steps, time_sleep]:
+            # special case for the first num_steps
+            if i == 0 and num_steps != 1:
+                found_error = True
+                error_messages[2][i] = "The first step has to be 1."
+
+            if i == None in [top_temp, bottom_temp, num_steps, time_sleep]:
                 found_error = True
                 if top_temp is None:
                     error_messages[0][i] = "Please enter a temperature."
