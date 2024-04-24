@@ -18,6 +18,7 @@ def control_form_buttons():
                 dbc.Popover(
                     "This only pauses the graphs, not the TECs, data logging or the table below.",
                     target="btn-pause-graphs",
+                    placement="bottom",
                     body=True,
                     trigger="hover",
                 ),
@@ -65,6 +66,7 @@ def control_sequence_buttons():
                     "This only pauses the graphs, not the Sequence, data logging or the table below.",
                     target="btn-pause-graphs-2",
                     body=True,
+                    placement="bottom",
                     trigger="hover",
                 ),
                 dbc.Col(
