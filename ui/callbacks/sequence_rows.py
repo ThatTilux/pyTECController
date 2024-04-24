@@ -15,17 +15,51 @@ def sequence_rows_callbacks(app):
         Input("visible-sequence-rows", "data"),
         prevent_initial_callback=False,
     )
-    def render_rows(rows_indices):
-        return [sequence_input_row("sequence-row", row_id=i) for i in rows_indices]
+    def render_rows(rows_data):
+        row_keys = list(map(int, rows_data.keys()))  # Convert keys to integers
+        
+        return [
+            sequence_input_row("sequence-row", row_id=i, data=rows_data[str(i)]) for i in row_keys
+        ]
 
     # updates the store with the row indices based on pressed buttons
+    # this callback triggeres a re-render of the rows, therefore the values in the input fields are saved here as well
     @app.callback(
         Output("visible-sequence-rows", "data"),
-        Input({"type": "add-remove-btn", "index": ALL, "action": ALL}, "n_clicks"),
-        State("visible-sequence-rows", "data"),
+        [
+            Input({"type": "add-remove-btn", "index": ALL, "action": ALL}, "n_clicks"),
+        ],
+        [
+            State({"type": "sequence-row-top-plate", "index": ALL}, "value"),
+            State({"type": "sequence-row-bottom-plate", "index": ALL}, "value"),
+            State({"type": "sequence-row-num-steps", "index": ALL}, "value"),
+            State({"type": "sequence-row-time-sleep", "index": ALL}, "value"),
+            State("visible-sequence-rows", "data"),
+        ],
         prevent_initial_call=True,
     )
-    def update_rows(n_clicks, rows):
+    def update_rows(
+        n_clicks, top_data, bottom_data, num_steps_data, time_sleep_data, rows_data
+    ):
+        # save all the data
+        # *_data should all have the same length
+        # first index of the top_data ... corresponds to the lowest rows_data index
+        row_keys = list(map(int, rows_data.keys()))  # Convert keys to integers
+        row_keys.sort()  # make sure they are sorted
+
+        # get all the values
+        for data_index, row_index in enumerate(row_keys):
+            if data_index < len(top_data):
+                rows_data[str(row_index)] = [
+                    top_data[data_index],
+                    bottom_data[data_index],
+                    num_steps_data[data_index],
+                    time_sleep_data[data_index],
+                ]
+            else:
+                # if the inout fields are not rendered yet, no data
+                rows_data[str(row_index)] = []
+
         # get which btn was pressed
         changed_id = ctx.triggered[0]["prop_id"].split(".")[0]
         if changed_id:
@@ -35,11 +69,11 @@ def sequence_rows_callbacks(app):
             row_index = action_info["index"]
             # get the action (add/remove)
             if action_info["action"] == "add":
-                rows.append(max(rows) + 1)  # Append new row index
+                rows_data[str(max(row_keys) + 1)] = [None, None, None, None]  # Append new row index
             elif action_info["action"] == "remove":
-                if len(rows) > 1:  # Ensure at least one row remains
-                    rows.remove(row_index)
-        return rows
+                if len(rows_data) > 1:  # Ensure at least one row remains
+                    rows_data.pop(str(row_index))
+        return rows_data
 
     # processes the form input fields on btn press
     @app.callback(

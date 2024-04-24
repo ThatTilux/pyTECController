@@ -49,8 +49,8 @@ def layout(app):
                 n_intervals=0,
                 max_intervals=5,
             ),  # 1s, stop after 10 excecutions
-            # store for holding the indices of visible rows in the sequence manager
-            dcc.Store(id="visible-sequence-rows", data=[0]),
+            # store for holding the indices and content of visible rows in the sequence manager
+            dcc.Store(id="visible-sequence-rows", data={"0": [None, None, None, None]}), # keys are strings since dash store will convert them to str anywys
         ],
         class_name="pt-2",
     )
