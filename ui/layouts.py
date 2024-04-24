@@ -9,6 +9,15 @@ from ui.components.graphs import graphs
 from ui.components.sequence_control_box import sequence_control_box
 
 
+# preconfigured sequence that will show up on startup
+PRECONFIGURED_SEQUENCE_DATA = {
+    "0": [65, 65, 1, 60],
+    "1": [65, 50, 1, 60],
+    "2": [45, 30, 20, 45],
+    "3": [30, 30, 1, 1],
+}
+
+
 def layout(app):
     return dbc.Container(
         [
@@ -25,9 +34,15 @@ def layout(app):
             dbc.Tabs(
                 [
                     # form to control the target temperature and start/stop the TECs
-                    dbc.Tab(html.Div(control_form(), className="mt-3"), label="Temperature Control"),
+                    dbc.Tab(
+                        html.Div(control_form(), className="mt-3"),
+                        label="Temperature Control",
+                    ),
                     # creation and starting of sequences
-                    dbc.Tab(html.Div(sequence_control_box(), className="mt-3"), label="Sequence"),
+                    dbc.Tab(
+                        html.Div(sequence_control_box(), className="mt-3"),
+                        label="Sequence",
+                    ),
                 ]
             ),
             # shows the most recent measurement
@@ -50,7 +65,9 @@ def layout(app):
                 max_intervals=5,
             ),  # 1s, stop after 10 excecutions
             # store for holding the indices and content of visible rows in the sequence manager
-            dcc.Store(id="visible-sequence-rows", data={"0": [None, None, None, None]}), # keys are strings since dash store will convert them to str anywys
+            dcc.Store(
+                id="visible-sequence-rows", data=PRECONFIGURED_SEQUENCE_DATA
+            ),  # keys are strings since dash store will convert them to str anywys
         ],
         class_name="pt-2",
     )
