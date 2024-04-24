@@ -200,7 +200,7 @@ def graphs_tables_callbacks(app):
         [
             Output("tec-data-table", "data"),
             Output("tec-data-table", "columns"),
-            Output("sequence-status-text", "children"),
+            Output("sequence-status-container", "children"),
             Output("initial-load", "children"),
             Output("graph-object-temperature", "figure"),
             Output("graph-all-current", "figure"),
@@ -257,7 +257,7 @@ def graphs_tables_callbacks(app):
         handle_sequence_instructions(instructions)
 
         # get the sequence status
-        sequence_status = sequence_manager.get_status()
+        sequence_status = sequence_manager.get_status(avg_top, avg_bottom)
 
         # If graphs are paused, do not update them
         if is_graph_paused(n_clicks, n_clicks_2):

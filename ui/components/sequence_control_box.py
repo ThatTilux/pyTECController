@@ -1,4 +1,4 @@
-from dash import html
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 from app.param_values import TEMP_INPUT_LIMITS
@@ -44,7 +44,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
     A row for the sequence input, i.e., one step of the sequence.
     data might default values. Format: (top_target, bottom_target, num_steps, time)
     """
-    
+
     return dbc.Row(
         [
             dbc.Col(
@@ -61,7 +61,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     "Target temperature for the top plate.",
                     min=TEMP_INPUT_LIMITS["min"],
                     max=TEMP_INPUT_LIMITS["max"],
-                    value=data[0]
+                    value=data[0],
                 ),
                 class_name="d-flex justify-content-end",
                 width=2,
@@ -75,7 +75,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     "Target temperature for the bottom plate.",
                     min=TEMP_INPUT_LIMITS["min"],
                     max=TEMP_INPUT_LIMITS["max"],
-                    value=data[1]
+                    value=data[1],
                 ),
                 class_name="d-flex justify-content-center",
                 width=2,
@@ -90,7 +90,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     min=1,
                     max=100,
                     step=1,
-                    value=data[2]
+                    value=data[2],
                 ),
                 class_name="d-flex justify-content-center",
                 width=2,
@@ -105,7 +105,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     min=0,
                     max=3_600,
                     step=1,
-                    value=data[3]
+                    value=data[3],
                 ),
                 class_name="d-flex justify-content-start",
                 width=2,
@@ -123,9 +123,10 @@ def status_text():
         [
             dbc.Col(
                 html.P(
-                    "Status: Waiting for sequence.",
-                    className="h5",
-                    id="sequence-status-text",
+                    dcc.Markdown(
+                        "#### Status: Waiting for sequence.",
+                        id="sequence-status-container",
+                    ),
                 ),
                 width={"size": 8, "offset": 2},
             )

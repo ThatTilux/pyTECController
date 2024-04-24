@@ -1,6 +1,20 @@
 from time import time
 
 
+def format_two_strip(number):
+    """
+    Formats floats to a maximum of 2 decimal points without trailing zeros.
+    """
+    return format(number, ".2f").rstrip("0").rstrip("0").rstrip(".")
+
+
+def format_two(number):
+    """
+    Formats floats to exactly 2 decimals
+    """
+    return format(number, ".2f")
+
+
 class SequenceManager:
     """
     Class for managing the state of a sequence.
@@ -57,38 +71,50 @@ class SequenceManager:
         # else, return the new targets
         return ("target", (new_top_target, new_bottom_target))
 
-    def get_status(self):
+    def get_status(self, top_temp, bottom_temp):
         """
-        Returns a string with the current status.
+        Returns an HTML element with the current status.
         """
         # check if sequence is finished
         if self.finished:
-            return "Status: Sequence finished."
+            return "#### Status: Sequence finished."
 
         # check for paused
         if self.paused:
-            return "Status: Sequence paused."
+            return "#### Status: Sequence paused."
 
         # if sequence has not been set yet
         if self.sequence is None:
-            return "Status: Waiting for sequence."
+            return "#### Status: Waiting for sequence."
 
         # get the current targets
         top, bottom, time = self.sequence.get_current_targets()
 
-        top_range = (
-            f"{top-self.temperature_window}°C to {top+self.temperature_window}°C"
-        )
-        bottom_range = (
-            f"{bottom-self.temperature_window}°C to {bottom+self.temperature_window}°C"
-        )
+        top_range = f"{format_two_strip(top-self.temperature_window)}°C to {format_two_strip(top+self.temperature_window)}°C"
+        bottom_range = f"{format_two_strip(bottom-self.temperature_window)}°C to {format_two_strip(bottom+self.temperature_window)}°C"
+
+        # format numbers
+        top_temp = format_two(top_temp)
+        bottom_temp = format_two(bottom_temp)
 
         # adjust status based on the time
         if time > 0:
             seconds = "second" if time == 1 else "seconds"
-            status = f"Status: Waiting to hold a top temperature of {top_range} and a bottom temperature of {bottom_range} for {time} {seconds}."
+            status = f"""
+            #### Status: Waiting to hold the target temperatures for {time} {seconds}. 
+            
+            ##### Top target: {top_range}. Actual: {top_temp}°C.
+            
+            ##### Bot. target: {bottom_range}. Actual: {bottom_temp}°C. 
+            """
         else:
-            status = f"Status: Waiting to reach a top temperature of {top_range} and a bottom temperature of {bottom_range}."
+            status = f"""
+            #### Status: Waiting to reach the target temperatures. 
+            
+            ##### Top target: {top_range}. Actual: {top_temp}°C.
+            
+            ##### Bot. target: {bottom_range}. Actual: {bottom_temp}°C. 
+            """
 
         return status
 
