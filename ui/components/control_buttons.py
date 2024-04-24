@@ -29,7 +29,7 @@ def control_form_buttons():
                                 "Stop all TECs",
                                 id="btn-stop-all-tecs",
                                 color="danger",
-                                style={"margin-right": "1em"},
+                                style={"margin-right": "0.5em"},
                             ),
                             dbc.Button(
                                 "Start",
@@ -57,14 +57,34 @@ def control_sequence_buttons():
         dbc.Row(
             [
                 dbc.Col(
-                    dbc.Button(
-                        "Freeze Graphs", id="btn-pause-graphs-2", color="secondary"
+                    html.Div(
+                        children=[
+                            dbc.Button(
+                                "Freeze Graphs",
+                                id="btn-pause-graphs-2",
+                                color="secondary",
+                                style={"margin-right": "0.5em"},
+                            ),
+                            dbc.Button(
+                                "Pause Sequence",
+                                id="btn-pause-sequence",
+                                color="secondary",
+                                outline=True,
+                            ),
+                        ]
                     ),
                     width={"size": 4},
                 ),
                 dbc.Popover(
                     "This only pauses the graphs, not the Sequence, data logging or the table below.",
                     target="btn-pause-graphs-2",
+                    body=True,
+                    placement="bottom",
+                    trigger="hover",
+                ),
+                dbc.Popover(
+                    "The sequence will not advance to the next step while it is paused.",
+                    target="btn-pause-sequence",
                     body=True,
                     placement="bottom",
                     trigger="hover",
@@ -76,7 +96,7 @@ def control_sequence_buttons():
                                 "Abort",
                                 id="btn-stop-sequence",
                                 color="danger",
-                                style={"margin-right": "1em"},
+                                style={"margin-right": "0.5em"},
                             ),
                             dbc.Button(
                                 "Start Sequence",

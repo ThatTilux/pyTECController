@@ -3,7 +3,7 @@ from dash.dependencies import Output, Input, State
 from dash import dcc
 import dash
 
-from ui.callbacks.graphs_tables import is_graph_paused
+from ui.callbacks.graphs_tables import is_graph_paused, set_pause_sequence
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.data_store import get_data_for_download, get_recovered_data
 
@@ -51,6 +51,24 @@ def button_callbacks(app):
         btn_label = "Resume Graphs" if is_graph_paused(n_clicks, n_clicks_2) else "Freeze Graphs"
 
         return btn_label, btn_label
+    
+    
+    # callback for when the pause sequence btn is pressed
+    @app.callback(
+        Output("btn-pause-sequence", "children"), 
+        Input("btn-pause-sequence", "n_clicks")
+    )
+    def handle_pause_sequence(n_clicks):
+        paused = n_clicks % 2 == 1
+        
+        # notify the sequence manager
+        set_pause_sequence(paused)
+        
+        # return btn label
+        if paused:
+            return "Resume Sequence"
+        return "Pause Sequence"
+        
 
     # when the stop all tecs btn is pressed
     @app.callback(

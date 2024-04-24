@@ -9,6 +9,7 @@ class SequenceManager:
     def __init__(self, temperature_window):
         self.sequence = None
         self.finished = False
+        self.paused = False
         # set temperature window
         self.temperature_window = temperature_window
 
@@ -20,6 +21,7 @@ class SequenceManager:
         """
         self.sequence = Sequence(sequence_values, self.temperature_window)
         self.finished = False
+        self.paused = False
 
     def get_instructions(self, top_temp, bottom_temp):
         """
@@ -28,8 +30,8 @@ class SequenceManager:
         ("target", (top_target, bottom_target))
         ("stop", None)
         """
-        # if no sequence has been set, return no instructions
-        if not self.sequence:
+        # if no sequence has been set or sequence is paused, return no instructions
+        if not self.sequence or self.paused:
             return None
 
         # get new instructions
@@ -56,6 +58,10 @@ class SequenceManager:
         # check if sequence is finished
         if self.finished:
             return "Status: Sequence finished."
+        
+        # check for paused
+        if self.paused:
+            return "Status: Sequence paused."
         
         # if sequence has not been set yet
         if self.sequence is None:
@@ -85,6 +91,13 @@ class SequenceManager:
         Deletes the sequences.
         """
         self.sequence = None
+        
+    def set_paused(self, value):
+        """
+        Pauses / Unpauses the sequece. The sequence will not advance to the next step when it is paused.
+        """
+        assert type(value) is bool
+        self.paused = value
 
 
 class Sequence:

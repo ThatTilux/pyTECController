@@ -41,7 +41,12 @@ def set_sequence(sequence_values):
 
     # enable all
     enable_all_plates()
-
+    
+def set_pause_sequence(value):
+    """
+    Pauses / Unpauses the sequence
+    """
+    sequence_manager.set_paused(value)
 
 def handle_sequence_instructions(instructions):
     """
