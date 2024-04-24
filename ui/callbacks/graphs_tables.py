@@ -233,12 +233,7 @@ def graphs_tables_callbacks(app):
         handle_sequence_instructions(instructions)
 
         # get the sequence status
-        sequence_status = (
-            sequence_manager.get_status() + f"top: {avg_top}, bottom: {avg_bottom}"
-        )
-
-        # TODO REMOVE
-        sequence_status = sequence_status + " " + str(instructions)
+        sequence_status = sequence_manager.get_status()
 
         # If graphs are paused, do not update them
         if is_graph_paused(n_clicks, n_clicks_2):
