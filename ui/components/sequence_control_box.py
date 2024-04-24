@@ -89,6 +89,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     "The system will reach the target temperatures in this many steps.",
                     min=1,
                     max=100,
+                    step=1,
                     value=data[2]
                 ),
                 class_name="d-flex justify-content-center",
@@ -103,6 +104,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     "The system will wait for both plates to hold their target temperature for this long before advancing to the next step.",
                     min=0,
                     max=3_600,
+                    step=1,
                     value=data[3]
                 ),
                 class_name="d-flex justify-content-start",
