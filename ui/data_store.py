@@ -30,8 +30,16 @@ REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
 # channel for notifying the ui in case of dummy mode
 REDIS_KEY_DUMMY_MODE = "mode"
 
-pubsub_dummy_mode = r.pubsub()
-pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
+try:
+    pubsub_dummy_mode = r.pubsub()
+    pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
+except Exception as e:
+    for i in range (3):
+        print(
+            f"[ERROR] Redis is offline. Please start redis and then restart this program."
+        )
+    input("Press Enter to continue....")
+    exit()
 
 # this is the maximum number of rows that will be stored
 # everything above this will be moved to the STORE_ALL channel
@@ -97,6 +105,7 @@ def get_data_from_store(channel=REDIS_KEY_STORE):
     # return all the data
     return df
 
+
 def get_recovered_data():
     """
     Gets the data that was saved from the previous session.
@@ -110,7 +119,7 @@ def get_data_for_download():
     """
     df_1 = get_data_from_store(channel=REDIS_KEY_STORE_ALL)
     df_2 = get_data_from_store(channel=REDIS_KEY_STORE)
-    
+
     if df_1 is None and df_2 is None:
         return pd.DataFrame()
 
@@ -175,15 +184,16 @@ def transfer_rows(df):
 
     return df
 
+
 def detect_dummy():
     """
     Listens to a pubsub channel to check if dummy mode was activated
     """
     global pubsub_dummy_mode
     message = pubsub_dummy_mode.get_message()
-    
+
     # if the backend posted a message to the channel, dummy mode is activated
-    while message: 
+    while message:
         if message["type"] == "message":
             # the format should be True$$time()
             data = message["data"].split("$$")

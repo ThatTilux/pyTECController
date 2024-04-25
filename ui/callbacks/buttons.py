@@ -3,7 +3,7 @@ from dash.dependencies import Output, Input, State
 from dash import dcc
 import dash
 
-from ui.callbacks.graphs_tables import is_graph_paused
+from ui.callbacks.graphs_tables import is_graph_paused, set_pause_sequence, skip_sequence_step
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.data_store import get_data_for_download, get_recovered_data
 
@@ -43,14 +43,44 @@ def button_callbacks(app):
     # when the pause graphs btn is pressed
     # the actual pausing happens in the callback that updates the graphs
     @app.callback(
-        Output("btn-pause-graphs", "children"),
-        [Input("btn-pause-graphs", "n_clicks")],
+        [Output("btn-pause-graphs", "children"), Output("btn-pause-graphs-2", "children")],
+        [Input("btn-pause-graphs", "n_clicks"), Input("btn-pause-graphs-2", "n_clicks")],
         prevent_initial_call=True,
     )
-    def handle_pause_graphs(n_clicks):
-        btn_label = "Resume Graphs" if is_graph_paused(n_clicks) else "Freeze Graphs"
+    def handle_pause_graphs(n_clicks, n_clicks_2):
+        btn_label = "Resume Graphs" if is_graph_paused(n_clicks, n_clicks_2) else "Freeze Graphs"
 
-        return btn_label
+        return btn_label, btn_label
+    
+    
+    # callback for when the pause sequence btn is pressed
+    @app.callback(
+        Output("btn-pause-sequence", "children"), 
+        Input("btn-pause-sequence", "n_clicks"),
+        prevent_initial_call=True
+    )
+    def handle_pause_sequence(n_clicks):
+        paused = n_clicks % 2 == 1
+        
+        # notify the sequence manager
+        set_pause_sequence(paused)
+        
+        # return btn label
+        if paused:
+            return "Resume Sequence"
+        return "Pause Sequence"
+    
+    # callback for when the skip sequence btn is pressed
+    @app.callback(
+        Output("btn-skip-sequence-step", "n_clicks"), # dummy  
+        Input("btn-skip-sequence-step", "n_clicks"),
+        prevent_initial_call=True
+    )
+    def skip_step(n_clicks):
+        # send the skip
+        skip_sequence_step()
+        
+        return dash.no_update
 
     # when the stop all tecs btn is pressed
     @app.callback(
@@ -65,13 +95,13 @@ def button_callbacks(app):
     # when the start btn is pressed
     @app.callback(
         [
-            Output("input-top-plate-error", "children"),
-            Output("input-bottom-plate-error", "children"),
+            Output({"type": "set-target-temp-error", "index": "input-top-plate"}, "children"),
+            Output({"type": "set-target-temp-error", "index": "input-bottom-plate"}, "children"),
         ],
         [
             Input("btn-start-tecs", "n_clicks"),
-            State("input-top-plate", "value"),
-            State("input-bottom-plate", "value"),
+            State({"type": "set-target-temp", "index": "input-top-plate"}, "value"),
+            State({"type": "set-target-temp", "index": "input-bottom-plate"}, "value"),
         ],
         prevent_initial_call=True,
     )
