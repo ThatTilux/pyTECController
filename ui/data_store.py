@@ -34,7 +34,7 @@ try:
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
 except Exception as e:
-    for i in range (3):
+    for i in range(3):
         print(
             f"[ERROR] Redis is offline. Please start redis and then restart this program."
         )
@@ -113,7 +113,7 @@ def get_recovered_data():
     return get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
 
 
-def get_data_for_download():
+def get_data_both_channels():
     """
     Stichtes the data from both channels together
     """
@@ -127,6 +127,26 @@ def get_data_for_download():
 
     return df
 
+def get_data_for_download(selected_columns):
+    """
+    Gets the data from both channels and changes the format.
+    All 8 rows with the same timestamp are consolidated into 1 row with timestamp as key.
+    Columns are consolidated and renamed accordingly.
+    """
+    df = get_data_both_channels()
+    
+    # only keep selected columns
+    selected_columns = ["timestamp"] + selected_columns
+    df = df[selected_columns]
+    
+    
+    # pivot to change index to timestamp
+    df_pivot = df.pivot_table(index='timestamp', columns=['Plate', 'TEC'])
+    
+    # Rename columns
+    df_pivot.columns = [f'{lvl1}_{lvl2}_{lvl3}' for lvl1, lvl2, lvl3 in df_pivot.columns]
+    
+    return df_pivot
 
 def update_store(new_data, channel=REDIS_KEY_STORE):
     """
