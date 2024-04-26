@@ -13,7 +13,7 @@ import pandas as pd
 
 from ui.callbacks.graphs_tables import _convert_timestamps
 from ui.components.graphs import format_timestamps
-from ui.data_store import get_data_for_download, get_data_from_store, update_store
+from ui.data_store import get_data_both_channels, get_data_from_store, update_store
 
 
 class TECInterface:
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     # save all previous data
     r.delete(REDIS_KEY_PREVIOUS_DATA)
-    previous_data = get_data_for_download()
+    previous_data = get_data_both_channels()
     update_store(previous_data, REDIS_KEY_PREVIOUS_DATA)
 
     # clean up the data channels
