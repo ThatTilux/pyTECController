@@ -13,7 +13,7 @@ from ui.components.sequence_control_box import sequence_control_box
 # preconfigured sequence that will show up on startup
 PRECONFIGURED_SEQUENCE_DATA = {
     "0": [65, 65, 1, 60],
-    "1": [65, 50, 1, 60],
+    "1": [65, 50, 3, 45],
     "2": [45, 30, 20, 45],
     "3": [30, 30, 1, 1],
 }

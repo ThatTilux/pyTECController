@@ -60,25 +60,36 @@ def sequence_rows_callbacks(app):
             else:
                 # if the inout fields are not rendered yet, no data
                 rows_data[str(row_index)] = []
+                
+        # Check if there is at least one button click
+        # dash triggeres this callback on startup for some reason; this checks that
+        if not any(click is not None for click in n_clicks):
+            return rows_data  # No button has been clicked; return the existing data unchanged
 
-        # get which btn was pressed
-        changed_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        if changed_id:
-            # get the action info
-            action_info = json.loads(changed_id)
-            # get index of affected row
-            row_index = action_info["index"]
-            # get the action (add/remove)
-            if action_info["action"] == "add":
-                rows_data[str(max(row_keys) + 1)] = [
-                    None,
-                    None,
-                    None,
-                    None,
-                ]  # Append new row index
-            elif action_info["action"] == "remove":
-                if len(rows_data) > 1:  # Ensure at least one row remains
-                    rows_data.pop(str(row_index))
+        # if the user spams a btn, this callback might be executed twice with same input
+        # this leads to an IndexError/KeyError.
+        try:
+            # get which btn was pressed
+            changed_id = ctx.triggered[0]["prop_id"].split(".")[0]
+            if changed_id:
+                # get the action info
+                action_info = json.loads(changed_id)
+                # get index of affected row
+                row_index = action_info["index"]
+                
+                # get the action (add/remove)
+                if action_info["action"] == "add":
+                    rows_data[str(max(row_keys) + 1)] = [
+                        None,
+                        None,
+                        None,
+                        None,
+                    ]  # Append new row index
+                elif action_info["action"] == "remove":
+                    if len(rows_data) > 1:  # Ensure at least one row remains
+                        rows_data.pop(str(row_index))
+        except (IndexError, KeyError) as e:
+            return dash.no_update
         return rows_data
 
     # processes the form input fields on btn press

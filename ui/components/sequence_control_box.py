@@ -44,6 +44,9 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
     A row for the sequence input, i.e., one step of the sequence.
     data might default values. Format: (top_target, bottom_target, num_steps, time)
     """
+    
+    if data is None or len(data) < 4:
+        data = (None, None, None, None)
 
     return dbc.Row(
         [

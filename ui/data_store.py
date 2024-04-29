@@ -34,7 +34,7 @@ try:
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
 except Exception as e:
-    for i in range(3):
+    for i in range (3):
         print(
             f"[ERROR] Redis is offline. Please start redis and then restart this program."
         )
@@ -145,6 +145,14 @@ def get_data_for_download(selected_columns):
     
     # Rename columns
     df_pivot.columns = [f'{lvl1}_{lvl2}_{lvl3}' for lvl1, lvl2, lvl3 in df_pivot.columns]
+    
+    # add "time_since_start" column
+    start_time = df_pivot.index.min()
+    df_pivot['time_since_start'] = df_pivot.index - start_time
+    
+    # Reorder columns to make 'time_since_start' the first column
+    columns = ['time_since_start'] + [col for col in df_pivot.columns if col != 'time_since_start']
+    df_pivot = df_pivot[columns]
     
     return df_pivot
 
