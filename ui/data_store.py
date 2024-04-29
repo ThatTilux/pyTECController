@@ -34,7 +34,7 @@ try:
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
 except Exception as e:
-    for i in range(3):
+    for i in range (3):
         print(
             f"[ERROR] Redis is offline. Please start redis and then restart this program."
         )
