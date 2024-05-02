@@ -72,7 +72,7 @@ To set up debugging in Visual Studio Code, create a `launch.json` file in the `.
     ]
 }
 ```
-This configuration allows you to debug in VSCode by simultaneously starting both components of this software.
+This configuration allows you to debug in VSCode by simultaneously starting both components of this software. Make sure to select the ```Run All``` configuration when launching the debugger.
 
 ## Starting the Application
 1. Start the Redis Docker container using:
