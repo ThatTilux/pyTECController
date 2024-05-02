@@ -15,7 +15,7 @@ This software serves as a control system for a specialized machine designed to i
    ```
 
 ### Set up Redis with Docker
-1. Download and install Docker Desktop for Windows. (Restart the computer if prompted.)
+1. [Download](https://docs.docker.com/desktop/install/windows-install/) and install Docker Desktop for Windows. (Restart the computer if prompted.)
 2. Verify the Docker installation with:
    ```
    docker --version
