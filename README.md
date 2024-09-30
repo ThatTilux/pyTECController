@@ -4,6 +4,8 @@ This software serves as a control system for a specialized machine designed to i
 
 ## Installation
 ### Prerequisites
+**Note: This software does not work on CERN machines with ESET Endpoint security installed as it disables the required communication via serial. A fix for this is TBA.**
+
 - This software is designed for Windows with Python 3.
 - It requires that 4 TEC-1161-10A-PT100-PIN control boards are connected via USB, each controlling 2 ETX11-12-F1-4040-TA-RT-W6 TECs.
 - It assumes the presence of a top and a bottom plate (4 TECs each).
