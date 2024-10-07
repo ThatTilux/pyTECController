@@ -15,7 +15,7 @@ PARAM_VALUES = {
     "upper error threshold": [
         4011,
         "degC",
-        75,
+        97,
     ],  # max temperature (will shut off when above)
     "kp": [3010, "", 90],
     "ti": [3011, "", 0],
