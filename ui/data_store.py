@@ -131,7 +131,8 @@ def get_data_for_download(selected_columns):
     """
     Gets the data from both channels and changes the format.
     All 8 rows with the same timestamp are consolidated into 1 row with timestamp as key.
-    Columns are consolidated and renamed accordingly.
+    Timestamp columns are consolidated and renamed accordingly.
+    Whitespaces in column names are replaced by underscores.
     """
     df = get_data_both_channels()
     
@@ -153,6 +154,9 @@ def get_data_for_download(selected_columns):
     # Reorder columns to make 'time_since_start' the first column
     columns = ['time_since_start'] + [col for col in df_pivot.columns if col != 'time_since_start']
     df_pivot = df_pivot[columns]
+    
+    # replace whitespaces and tabs in column names with underscores
+    df_pivot.columns = df_pivot.columns.str.replace(r'\s+', '_', regex=True)
     
     return df_pivot
 
