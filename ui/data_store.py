@@ -27,9 +27,17 @@ REDIS_KEY_STORE_ALL = "tec-data-store-all"
 # channel for recovered data
 REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
 
+# channel for callback locks
+REDIS_KEY_PREFIX_CALLBACK_LOCK = "tec-callback-lock:"
+
 # channel for notifying the ui in case of dummy mode
 REDIS_KEY_DUMMY_MODE = "mode"
 
+# delete all callback lock channels
+for key in r.scan_iter(f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}*"):
+    r.delete(key)
+
+# subscribe to dummy mode channel
 try:
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
@@ -234,3 +242,29 @@ def detect_dummy():
                 return True
         message = pubsub_dummy_mode.get_message()
     return False
+
+def set_callback_lock(id, lock):
+    """
+    Locks or unlocks a callback via Redis.
+    Args:
+        id (str): The unique identifier for the callback.
+        lock (bool): A boolean value indicating whether to lock (True) or unlock (False) the callback.
+    """
+    key = f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}:{id}"
+    r.set(key, '1' if lock else '0')
+
+def get_callback_lock(id):
+    """
+    Get the lock state for a callback.
+    Args:
+        id (str): The unique identifier for the callback.
+    Returns:
+        lock (bool): A boolean value indicating the callback is locked (True) or not (False).
+    """
+    key = f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}:{id}"
+    value = r.get(key)
+    if value is None:
+        return False
+    else:
+        return value == '1'
+
