@@ -185,7 +185,7 @@ def sequence_rows_callbacks(app):
                 found_error = True
                 error_messages[2][i] = "The first step has to be 1."
 
-            if i == None in [top_temp, bottom_temp, num_steps, time_sleep]:
+            if None in [top_temp, bottom_temp, num_steps, time_sleep]:
                 found_error = True
                 if top_temp is None:
                     error_messages[0][i] = "Please enter a temperature."
