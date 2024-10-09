@@ -114,13 +114,6 @@ def get_data_from_store(channel=REDIS_KEY_STORE):
     return df
 
 
-def get_recovered_data():
-    """
-    Gets the data that was saved from the previous session.
-    """
-    return get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
-
-
 def get_data_both_channels():
     """
     Stichtes the data from both channels together
@@ -135,20 +128,14 @@ def get_data_both_channels():
 
     return df
 
-def get_data_for_download(selected_columns):
+def prepare_df_for_download(df):
     """
-    Gets the data from both channels and changes the format.
+    Converts internally used dataframe into a format that is convenient for data analysis;
+
     All 8 rows with the same timestamp are consolidated into 1 row with timestamp as key.
     Timestamp columns are consolidated and renamed accordingly.
     Whitespaces in column names are replaced by underscores.
     """
-    df = get_data_both_channels()
-    
-    # only keep selected columns
-    selected_columns = ["timestamp"] + selected_columns
-    df = df[selected_columns]
-    
-    
     # pivot to change index to timestamp
     df_pivot = df.pivot_table(index='timestamp', columns=['Plate', 'TEC'])
     
@@ -165,6 +152,30 @@ def get_data_for_download(selected_columns):
     
     # replace whitespaces and tabs in column names with underscores
     df_pivot.columns = df_pivot.columns.str.replace(r'\s+', '_', regex=True)
+    
+    return df_pivot
+
+def get_data_for_download(selected_columns):
+    """
+    Gets the data from both channels and changes the format.
+    """
+    df = get_data_both_channels()
+    
+    # only keep selected columns
+    selected_columns = ["timestamp"] + selected_columns
+    df = df[selected_columns]
+    
+    df_pivot = prepare_df_for_download(df)
+    
+    return df_pivot
+
+def get_recovered_data():
+    """
+    Gets the data that was saved from the previous session.
+    """
+    df = get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
+    
+    df_pivot = prepare_df_for_download(df)
     
     return df_pivot
 
