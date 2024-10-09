@@ -188,13 +188,13 @@ def sequence_rows_callbacks(app):
             if None in [top_temp, bottom_temp, num_steps, time_sleep]:
                 found_error = True
                 if top_temp is None:
-                    error_messages[0][i] = "Please enter a temperature."
+                    error_messages[0][i] = "Input invalid."
                 if bottom_temp is None:
-                    error_messages[1][i] = "Please enter a temperature."
+                    error_messages[1][i] = "Input invalid."
                 if num_steps is None:
-                    error_messages[2][i] = "Please enter a number."
+                    error_messages[2][i] = "Input invalid."
                 if time_sleep is None:
-                    error_messages[3][i] = "Please enter a number."
+                    error_messages[3][i] = "Input invalid."
                 break  # only raise errors for one row
             else:
                 # Parse input
