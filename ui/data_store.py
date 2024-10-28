@@ -154,6 +154,34 @@ def get_data_for_download(selected_columns):
     columns = ['time_since_start'] + [col for col in df_pivot.columns if col != 'time_since_start']
     df_pivot = df_pivot[columns]
     
+    # replace whitespaces and tabs in column names with underscores
+    df_pivot.columns = df_pivot.columns.str.replace(r'\s+', '_', regex=True)
+    
+    return df_pivot
+
+def get_data_for_download(selected_columns=None):
+    """
+    Gets the data from both channels and changes the format.
+    """
+    df = get_data_both_channels()
+    
+    # only keep selected columns
+    if selected_columns is not None:
+        selected_columns = ["timestamp"] + selected_columns
+        df = df[selected_columns]
+    
+    df_pivot = prepare_df_for_download(df)
+    
+    return df_pivot
+
+def get_recovered_data():
+    """
+    Gets the data that was saved from the previous session.
+    """
+    df = get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
+    
+    df_pivot = prepare_df_for_download(df)
+    
     return df_pivot
 
 def update_store(new_data, channel=REDIS_KEY_STORE):

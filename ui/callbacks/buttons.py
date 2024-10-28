@@ -9,7 +9,17 @@ from ui.callbacks.graphs_tables import (
     skip_sequence_step,
 )
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
-from ui.data_store import get_data_both_channels, get_data_for_download, get_recovered_data
+from ui.data_store import (
+    get_data_both_channels,
+    get_data_for_download,
+    get_recovered_data,
+)
+
+
+# Helper function to get the file name of a new CSV to be downloaded as a string
+def get_CSV_file_name():
+    time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+    return f"TEC_data_{time}.csv"
 
 
 def button_callbacks(app):
@@ -18,11 +28,23 @@ def button_callbacks(app):
         Output("download-data-csv", "data"),
         [
             Input("btn-download-csv", "n_clicks"),
+            Input("btn-download-csv-reconnecting", "n_clicks"),
             State("checkboxes-download", "value"),
         ],
         prevent_initial_call=True,
     )
-    def download_all_data(n_clicks, selected_options):
+    def download_all_data(n, n2, selected_options):
+        # Check which button was pressed
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            return dash.no_update
+        else:
+            button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+        if button_id == "btn-download-csv-reconnecting":
+            # Select all options
+            selected_options = None
+
         df = get_data_for_download(selected_options)
 
 
@@ -38,8 +60,7 @@ def button_callbacks(app):
     def download_recovered_data(n_clicks):
         df = get_recovered_data()
 
-        time = datetime.now()
-        return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
+        return dcc.send_data_frame(df.to_csv, get_CSV_file_name())
 
     # when the pause graphs btn is pressed
     # the actual pausing happens in the callback that updates the graphs

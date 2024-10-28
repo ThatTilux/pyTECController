@@ -30,15 +30,10 @@ def download_accordion():
                             "target object temperature",
                             "output current",
                             "output voltage",
-                            "output power"
+                            "output power",
                         ],  # Default selected
                     ),
-                    dbc.Button(
-                        "Download as CSV ",
-                        color="primary",
-                        id="btn-download-csv",
-                        class_name="mt-2",
-                    ),
+                    download_btn('btn-download-csv'),
                 ],
                 title="Download Data",
             ),
@@ -59,4 +54,13 @@ def download_accordion():
         ],
         start_collapsed=True,
         class_name="mt-3 mb-3",
+    )
+
+
+def download_btn(id, label="Download as CSV"):
+    return dbc.Button(
+        label,
+        color="primary",
+        id=id,
+        class_name="mt-2",
     )
