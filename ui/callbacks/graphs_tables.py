@@ -13,7 +13,7 @@ from ui.components.graphs import (
     update_graph_object_temperature,
     update_graph_sum_power,
 )
-from ui.data_store import get_data_from_store
+from ui.data_store import check_reconnecting, get_data_from_store
 from ui.sequence_manager import SequenceManager
 
 
@@ -211,6 +211,7 @@ def graphs_tables_callbacks(app):
             Output("graph-all-temperature-2", "figure"),
             Output("graph-sum-power", "figure"),
             Output("graph-sum-power-2", "figure"),
+            Output("tec-error-overlay", "style"),
         ],
         [
             Input("interval-component", "n_intervals"),
@@ -232,6 +233,12 @@ def graphs_tables_callbacks(app):
         else:
             app_loading_status = "loaded"
 
+        # before getting data, check if the app should be overlayed with the "Reconnecting" overlay
+        reconnecting_code = check_reconnecting()
+        if reconnecting_code == 1:
+            # display overlay
+            return (dash.no_update,) * 13 + ({"display": "block"},)
+
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
         MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
@@ -242,7 +249,7 @@ def graphs_tables_callbacks(app):
         df_all = get_data_from_store()
 
         if df_all is None:
-            return (dash.no_update,) * 13
+            return (dash.no_update,) * 14
 
         # update table
         # get the most recent measurement
@@ -266,7 +273,7 @@ def graphs_tables_callbacks(app):
                 table_columns,
                 sequence_status,
                 app_loading_status,
-            ) + (dash.no_update,) * 9
+            ) + (dash.no_update,) * 10
 
         # Update graphs
 
@@ -352,4 +359,5 @@ def graphs_tables_callbacks(app):
             graph_all_temperature2,
             graph_sum_power,
             graph_sum_power2,
+            {"display": "none"}
         )

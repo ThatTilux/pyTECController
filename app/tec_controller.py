@@ -24,6 +24,12 @@ class TECController(object):
     # (we need 2 instances of this class per port but only 1 session)
     _sessions = {}
 
+    # number of successive times that the get_data function timed out
+    _num_timeout_get_data = 0
+
+    # allow the get_data function to timeout this many times before closing the connection
+    _num_timeout_limit = 60
+
     def _tearDown(self):
         self.session().stop()
 
@@ -48,7 +54,6 @@ class TECController(object):
 
         # we want to run in temperature control mode
         self.set_temperature_control_mode()
-        
 
     def _connect(self):
         # open session or use existing one
@@ -76,13 +81,31 @@ class TECController(object):
         for description in self.queries:
             id, _ = COMMAND_TABLE[description]
             try:
+
                 value = self.session().get_parameter(
                     parameter_id=id,
                     address=self.address,
                     parameter_instance=self.channel,
                 )
                 data.update({description: value})
-            except (ResponseException, WrongChecksum) as ex:
+                self._num_timeout_get_data = 0
+
+            except ResponseException as ex:
+                # TEC is offline and may currently be restarting.
+                # Instead of stopping the session, throw exception to be handled.
+                # Only do this n times
+                self._num_timeout_get_data += 1
+
+                if self._num_timeout_get_data >= self._num_timeout_limit:
+                    # close connection
+                    self.session().stop()
+                    self._session = None
+                    raise RuntimeError
+
+                # throw exception to be handled
+                raise ex
+
+            except WrongChecksum as ex:
                 self.session().stop()
                 self._session = None
         return data
@@ -119,7 +142,7 @@ class TECController(object):
         Enables the mode "Temperature Controller"
         """
         return self._set_input_selection(2)
-    
+
     def set_delay_till_restart(self, value):
         """
         Sets the delay for automatic restart after error (in seconds).
@@ -135,7 +158,7 @@ class TECController(object):
             address=self.address,
             parameter_instance=self.channel,
         )
-        
+
     def _set_input_selection(self, value):
         """
         Changes the input selection
@@ -155,19 +178,19 @@ class TECController(object):
             address=self.address,
             parameter_instance=self.channel,
         )
-        
+
     def set_parallel_mode(self):
         """
         Sets the mode of operation to parallel with individual load.
         """
         return self._set_general_operating_mode(1)
-    
+
     def set_individual_mode(self):
         """
         Sets the mode of operation to individual.
         """
         return self._set_general_operating_mode(0)
-        
+
     def _set_general_operating_mode(self, value):
         """
         Sets the general operating mode.
@@ -179,7 +202,9 @@ class TECController(object):
         assert value in [0, 1, 2]
 
         logging.info(
-            "set general operating mode to {} for channel {}".format(value, self.channel)
+            "set general operating mode to {} for channel {}".format(
+                value, self.channel
+            )
         )
         return self.session().set_parameter(
             parameter_name="General Operating Mode",

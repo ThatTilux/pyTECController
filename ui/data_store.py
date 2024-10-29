@@ -30,9 +30,14 @@ REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
 # channel for notifying the ui in case of dummy mode
 REDIS_KEY_DUMMY_MODE = "mode"
 
+# channel for notifying the ui in case of reconnecting
+REDIS_KEY_RECONNECTING = "tec-data-reconnecting"
+
 try:
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
+    pubsub_reconnecting = r.pubsub()
+    pubsub_reconnecting.subscribe(REDIS_KEY_RECONNECTING)
 except Exception as e:
     for i in range (3):
         print(
@@ -240,7 +245,6 @@ def transfer_rows(df):
 
     return df
 
-
 def detect_dummy():
     """
     Listens to a pubsub channel to check if dummy mode was activated
@@ -258,3 +262,27 @@ def detect_dummy():
                 return True
         message = pubsub_dummy_mode.get_message()
     return False
+
+def check_reconnecting():
+    """
+    Listens to a pubsub channel to check if the data acquisition is reconnecting.
+    
+    Returns: 0 if there is no new message, 1 if data acquisition is reconnecting, 2 if it is back online
+    """
+    global pubsub_reconnecting
+    message = pubsub_reconnecting.get_message()
+    
+    while message:
+        if message["type"] == "message":
+            # format is either ConnectionReestablished$${time()} or Reconnecting$${time()}
+            data = message["data"].split("$$")
+            # message should not be older than 10s
+            if time() - float(data[1]) <= 10:
+                if data[0] == "Reconnecting":
+                    return 1
+                if data[0] == "ConnectionReestablished":
+                    return 2
+        message = pubsub_dummy_mode.get_message()
+    return 0
+            
+    

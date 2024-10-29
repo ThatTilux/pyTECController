@@ -11,6 +11,7 @@ from app.serial_ports import PORTS
 from time import sleep, time
 import pandas as pd
 
+from mecom.exceptions import ResponseException
 from ui.callbacks.graphs_tables import _convert_timestamps
 from ui.components.graphs import format_timestamps
 from ui.data_store import get_data_both_channels, get_data_from_store, update_store
@@ -149,6 +150,9 @@ if __name__ == "__main__":
     # inform UI of dummy mode
     REDIS_KEY_DUMMY_MODE = "mode"
 
+    # inform the UI that data acquisition is reconnecting
+    REDIS_KEY_RECONNECTING = "tec-data-reconnecting"
+
     # save all previous data
     r.delete(REDIS_KEY_PREVIOUS_DATA)
     previous_data = get_data_both_channels()
@@ -158,9 +162,11 @@ if __name__ == "__main__":
     r.delete(REDIS_KEY)
     r.delete(REDIS_KEY_ALL)
     r.delete(REDIS_KEY_DUMMY_MODE)
+    r.delete(REDIS_KEY_RECONNECTING)
 
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
+    pubsub_dummy_mode.subscribe(REDIS_KEY_RECONNECTING)
 
     # listen to ui commands channel
     pubsub = r.pubsub()
@@ -169,6 +175,8 @@ if __name__ == "__main__":
     # try to connect to the TECs
     # use dummy data if connection unsuccessful
     dummy = False
+    # keep track if all TECs are online right now
+    tecs_online = True
     try:
         tec_interface = TECInterface()
     except Exception as e:
@@ -187,14 +195,25 @@ if __name__ == "__main__":
             message = pubsub.get_message()
 
         # get and store fresh data
-        data = tec_interface.get_data()
-        update_store(data)
+        try:
+            data = tec_interface.get_data()  # ResponseTimeout can only occur here
+            update_store(data)
 
-        # print the current data for debugging
-        df = get_data_from_store()
-        _convert_timestamps(df)
-        format_timestamps(df)
-        print(df)
+            # if tecs were offline before, signal that all are connected again
+            if not tecs_online:
+                r.publish(REDIS_KEY_RECONNECTING, f"ConnectionReestablished$${time()}")
+                tecs_online = True
+
+            # print the current data for debugging
+            df = get_data_from_store()
+            _convert_timestamps(df)
+            format_timestamps(df)
+            print(df)
+        except ResponseException as ex:
+            # some TECs have encountered an error and are restarting.
+            # instead of sending data, send the signal that an error has occured
+            r.publish(REDIS_KEY_RECONNECTING, f"Reconnecting$${time()}")
+            tecs_online = False
 
         # Print dummy-info
         if dummy:

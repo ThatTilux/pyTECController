@@ -6,16 +6,16 @@ Defines some default parameters to prevent damage to components and optimal beha
 # { display_name: [parameter_id, unit, limit]}
 PARAM_VALUES = {
     "current limitation": [2030, "A", 9],  # max current provided
-    "voltage limitation": [2031, "V", 10],  # max voltage provided
+    "voltage limitation": [2031, "V", 10],  # max voltage provided 
     "lower error threshold": [
         4010,
         "degC",
-        0,
+        0, 
     ],  # min temperature (will shut off when below)
     "upper error threshold": [
         4011,
         "degC",
-        75,
+        97,
     ],  # max temperature (will shut off when above)
     "kp": [3010, "", 90],
     "ti": [3011, "", 0],
