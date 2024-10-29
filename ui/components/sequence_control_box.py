@@ -106,7 +106,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     "s",
                     "The system will wait for both plates to hold their target temperature for this long before advancing to the next step.",
                     min=0,
-                    max=3_600,
+                    max=24*60*60, #24h
                     step=1,
                     value=data[3],
                 ),

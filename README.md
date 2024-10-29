@@ -1,21 +1,28 @@
 # pyTECController
-This software serves as a control system for a specialized machine designed to impregnate magnets with wax as part of the CERN FCC-ee HTS4 research project. The system controls two copper plates, one positioned above and one below the magnet. Each plate is equipped with four Thermoelectric Coolers (TECs), specifically the ETX11-12-F1-4040-TA-RT-W6 model from Laird Thermal Systems ([Product Page](https://lairdthermal.com/products/thermoelectric-cooler-modules/peltier-hitemp-etx-series/ETX11-12-F1-4040-TA-RT-W6)). To manage these TECs, the software utilizes the open-source PYMECOM API, available under the MIT license at [pyMeCom GitHub Repository](https://github.com/spomjaksilp/pyMeCom).
+This software serves as a control system for a prototype magnet impregnation machine as part of the CERN FCC-ee HTS4 research project. The impregnation machine utilizes the novel approach of using paraffin wax to impregnate prototype CCT magnets built from HTS tape. This software communicates with the machine via serial and provides a user interface, featuring data display and control mechanisms for the machine. This software utilizes a modified version of the open-source [pyMeCom](https://github.com/spomjaksilp/pyMeCom) API to control the heating elements of the impregnator.
 
+## Background
+
+### Impregnation Machine
+This prototype machine consists of an upright, cylindrical aluminium chamber encapsulating the magnet. Above and below this chamber are two copper plates (one each). These plates are heated by 4 Thermoelectric Coolers (TECs) each, creating a temperature gradient inside the chamber when heated to different temperatures. These 8 TECs in total are connected to 4 PID control boards with each board controlling two TECs. The 4 PID control boards need to be connected to the device running this software via serial (USB).
+
+For the TECs, the ETX11-12-F1-4040-TA-RT-W6 model is used. For the PID control boards, the TEC-1161-10A-PT100-PIN model is used.
 
 ## Installation
 ### Prerequisites
+**Note: This software does not work on CERN devices with ESET Endpoint Security installed as it disables the required communication via serial. A fix for this is TBA.**
+
 - This software is designed for Windows with Python 3.
-- It requires that 4 TEC-1161-10A-PT100-PIN control boards are connected via USB, each controlling 2 ETX11-12-F1-4040-TA-RT-W6 TECs.
-- It assumes the presence of a top and a bottom plate (4 TECs each).
+- This software is designed for the impregnation setup described above. However, it was designed in a modular way, allowing the support of different setups with minor changes.
 
 ### Install Dependencies
-1. Navigate in the root directory and install the required dependencies, e.g., with pip:
+1. Navigate to the root directory and install the required dependencies, e.g., with pip:
    ```
    pip install -r requirements.txt
    ```
 
 ### Set up Redis with Docker
-1. Download and install Docker Desktop for Windows. (Restart the computer if prompted.)
+1. [Download](https://docs.docker.com/desktop/install/windows-install/) and install Docker Desktop for Windows. (Restart the computer if prompted.)
 2. Verify the Docker installation with:
    ```
    docker --version
@@ -36,6 +43,9 @@ This software serves as a control system for a specialized machine designed to i
 
 ### Optional: Developer Setup for Debugging with VSCode
 To set up debugging in Visual Studio Code, create a `launch.json` file in the `.vscode` folder at the root of your project with the following configurations:
+<details>
+<summary>launch.json</summary>
+   
 ```json
 {
     "version": "0.2.0",
@@ -72,15 +82,16 @@ To set up debugging in Visual Studio Code, create a `launch.json` file in the `.
     ]
 }
 ```
-This configuration allows you to debug in VSCode by simultaneously starting both components of this software.
+This configuration allows you to debug in VSCode by simultaneously starting both components of this software. Make sure to select the ```Run All``` configuration when launching the debugger.
+</details>
 
 ## Starting the Application
 1. Start the Redis Docker container using:
    ```
    docker start tec-data-redis
    ```
-2. Optional: Connect the TEC control boards via USB. If none are connected, the software will run with some dummy data.
-3. Start this software by navigating into the root directory and executing the start file:
+2. Connect the TEC control boards via USB. If none are connected, the software will run with some dummy data.
+3. Start this software by navigating to the root directory and executing the start file:
    ```
    .\start.bat
    ```

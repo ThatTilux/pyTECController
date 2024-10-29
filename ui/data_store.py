@@ -27,12 +27,20 @@ REDIS_KEY_STORE_ALL = "tec-data-store-all"
 # channel for recovered data
 REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
 
+# channel for callback locks
+REDIS_KEY_PREFIX_CALLBACK_LOCK = "tec-callback-lock:"
+
 # channel for notifying the ui in case of dummy mode
 REDIS_KEY_DUMMY_MODE = "mode"
 
 # channel for notifying the ui in case of reconnecting
 REDIS_KEY_RECONNECTING = "tec-data-reconnecting"
 
+# delete all callback lock channels
+for key in r.scan_iter(f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}*"):
+    r.delete(key)
+
+# subscribe to dummy mode channel
 try:
     pubsub_dummy_mode = r.pubsub()
     pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
@@ -111,13 +119,6 @@ def get_data_from_store(channel=REDIS_KEY_STORE):
     return df
 
 
-def get_recovered_data():
-    """
-    Gets the data that was saved from the previous session.
-    """
-    return get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
-
-
 def get_data_both_channels():
     """
     Stichtes the data from both channels together
@@ -132,19 +133,14 @@ def get_data_both_channels():
 
     return df
 
-def get_data_for_download(selected_columns):
+def prepare_df_for_download(df):
     """
-    Gets the data from both channels and changes the format.
+    Converts internally used dataframe into a format that is convenient for data analysis;
+
     All 8 rows with the same timestamp are consolidated into 1 row with timestamp as key.
-    Columns are consolidated and renamed accordingly.
+    Timestamp columns are consolidated and renamed accordingly.
+    Whitespaces in column names are replaced by underscores.
     """
-    df = get_data_both_channels()
-    
-    # only keep selected columns
-    selected_columns = ["timestamp"] + selected_columns
-    df = df[selected_columns]
-    
-    
     # pivot to change index to timestamp
     df_pivot = df.pivot_table(index='timestamp', columns=['Plate', 'TEC'])
     
@@ -164,16 +160,15 @@ def get_data_for_download(selected_columns):
     
     return df_pivot
 
-def get_data_for_download(selected_columns=None):
+def get_data_for_download(selected_columns):
     """
     Gets the data from both channels and changes the format.
     """
     df = get_data_both_channels()
     
     # only keep selected columns
-    if selected_columns is not None:
-        selected_columns = ["timestamp"] + selected_columns
-        df = df[selected_columns]
+    selected_columns = ["timestamp"] + selected_columns
+    df = df[selected_columns]
     
     df_pivot = prepare_df_for_download(df)
     
@@ -284,5 +279,30 @@ def check_reconnecting():
                     return 2
         message = pubsub_dummy_mode.get_message()
     return 0
+
+def set_callback_lock(id, lock):
+    """
+    Locks or unlocks a callback via Redis.
+    Args:
+        id (str): The unique identifier for the callback.
+        lock (bool): A boolean value indicating whether to lock (True) or unlock (False) the callback.
+    """
+    key = f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}:{id}"
+    r.set(key, '1' if lock else '0')
+
+def get_callback_lock(id):
+    """
+    Get the lock state for a callback.
+    Args:
+        id (str): The unique identifier for the callback.
+    Returns:
+        lock (bool): A boolean value indicating the callback is locked (True) or not (False).
+    """
+    key = f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}:{id}"
+    value = r.get(key)
+    if value is None:
+        return False
+    else:
+        return value == '1'
             
     

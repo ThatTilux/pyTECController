@@ -1,4 +1,3 @@
-from time import time
 from dash.dependencies import Output, Input, State
 import dash
 import pandas as pd
@@ -13,7 +12,7 @@ from ui.components.graphs import (
     update_graph_object_temperature,
     update_graph_sum_power,
 )
-from ui.data_store import check_reconnecting, get_data_from_store
+from ui.data_store import get_callback_lock, check_reconnecting, get_data_from_store, set_callback_lock
 from ui.sequence_manager import SequenceManager
 
 
@@ -227,7 +226,7 @@ def graphs_tables_callbacks(app):
         n, n_clicks, n_clicks_2, active_tab, active_tab_2, is_app_loaded
     ):
 
-        # notify the spinnder that the app has loaded and is ready for display
+        # notify the spinner that the app has loaded and is ready for display
         if is_app_loaded:
             app_loading_status = dash.no_update
         else:
@@ -250,114 +249,139 @@ def graphs_tables_callbacks(app):
 
         if df_all is None:
             return (dash.no_update,) * 14
+        
+        # check that this callback is not already running
+        if get_callback_lock("update_components_from_store"):
+            return (dash.no_update,) * 14
 
-        # update table
-        # get the most recent measurement
-        df_recent = df_all.tail(NUM_TECS)
-        table_data, table_columns = update_measurement_table(df_recent)
+        # set the lock
+        set_callback_lock("update_components_from_store", True)
 
-        # get the current avergae temperatures
-        avg_top, avg_bottom = get_avg_temps(df_recent)
+        # try-finally block for the rest of the code to make sure that the lock is unset in every case
+        try:
+            # only show this many datapoints:
+            MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
+            MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
+            MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
+            MAX_DP_POWER = NUM_TECS * 10 * 60  # 10 min
 
-        # get new instructions from the sequence manager
-        instructions = sequence_manager.get_instructions(avg_top, avg_bottom)
-        handle_sequence_instructions(instructions)
+            # get data
+            df_all = get_data_from_store()
 
-        # get the sequence status
-        sequence_status = sequence_manager.get_status(avg_top, avg_bottom)
+            if df_all is None:
+                return (dash.no_update,) * 13
 
-        # If graphs are paused, do not update them
-        if is_graph_paused(n_clicks, n_clicks_2):
+            # update table
+            # get the most recent measurement
+            df_recent = df_all.tail(NUM_TECS)
+            table_data, table_columns = update_measurement_table(df_recent)
+
+            # get the current avergae temperatures
+            avg_top, avg_bottom = get_avg_temps(df_recent)
+
+            # get new instructions from the sequence manager
+            instructions = sequence_manager.get_instructions(avg_top, avg_bottom)
+            handle_sequence_instructions(instructions)
+
+            # get the sequence status
+            sequence_status = sequence_manager.get_status(avg_top, avg_bottom)
+
+            # If graphs are paused, do not update them
+            if is_graph_paused(n_clicks, n_clicks_2):
+                return (
+                    table_data,
+                    table_columns,
+                    sequence_status,
+                    app_loading_status,
+                ) + (dash.no_update,) * 10
+
+            # Update graphs
+
+            # convert timestamps to datetime
+            _convert_timestamps(df_all)
+
+            # update main temperature graph
+            graph_object_temp = update_graph_object_temperature(
+                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-object-temperature"
+            )
+
+            # from the tab graphs, only update the visible ones
+
+            # tab-1
+            graph_all_current = (
+                update_graph_all_current(
+                    df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current"
+                )
+                if active_tab == "tab-current"
+                else dash.no_update
+            )
+            graph_all_voltage = (
+                update_graph_all_voltage(
+                    df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage"
+                )
+                if active_tab == "tab-voltage"
+                else dash.no_update
+            )
+            graph_all_temperature = (
+                update_graph_all_temperature(
+                    df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature"
+                )
+                if active_tab == "tab-temperature"
+                else dash.no_update
+            )
+            graph_sum_power = (
+                update_graph_sum_power(
+                    df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power"
+                )
+                if active_tab == "tab-power"
+                else dash.no_update
+            )
+
+            # tab-2
+            graph_all_current2 = (
+                update_graph_all_current(
+                    df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current-2"
+                )
+                if active_tab_2 == "tab-current"
+                else dash.no_update
+            )
+            graph_all_voltage2 = (
+                update_graph_all_voltage(
+                    df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage-2"
+                )
+                if active_tab_2 == "tab-voltage"
+                else dash.no_update
+            )
+            graph_all_temperature2 = (
+                update_graph_all_temperature(
+                    df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature-2"
+                )
+                if active_tab_2 == "tab-temperature"
+                else dash.no_update
+            )
+            graph_sum_power2 = (
+                update_graph_sum_power(
+                    df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power-2"
+                )
+                if active_tab_2 == "tab-power"
+                else dash.no_update
+            )
+
             return (
                 table_data,
                 table_columns,
                 sequence_status,
                 app_loading_status,
-            ) + (dash.no_update,) * 10
-
-        # Update graphs
-
-        # convert timestamps to datetime
-        _convert_timestamps(df_all)
-
-        # update main temperature graph
-        graph_object_temp = update_graph_object_temperature(
-            df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-object-temperature"
-        )
-
-        # from the tab graphs, only update the visible ones
-
-        # tab-1
-        graph_all_current = (
-            update_graph_all_current(
-                df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current"
+                graph_object_temp,
+                graph_all_current,
+                graph_all_current2,
+                graph_all_voltage,
+                graph_all_voltage2,
+                graph_all_temperature,
+                graph_all_temperature2,
+                graph_sum_power,
+                graph_sum_power2,
+                {"display": "none"}
             )
-            if active_tab == "tab-current"
-            else dash.no_update
-        )
-        graph_all_voltage = (
-            update_graph_all_voltage(
-                df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage"
-            )
-            if active_tab == "tab-voltage"
-            else dash.no_update
-        )
-        graph_all_temperature = (
-            update_graph_all_temperature(
-                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature"
-            )
-            if active_tab == "tab-temperature"
-            else dash.no_update
-        )
-        graph_sum_power = (
-            update_graph_sum_power(df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power")
-            if active_tab == "tab-power"
-            else dash.no_update
-        )
-
-        # tab-2
-        graph_all_current2 = (
-            update_graph_all_current(
-                df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current-2"
-            )
-            if active_tab_2 == "tab-current"
-            else dash.no_update
-        )
-        graph_all_voltage2 = (
-            update_graph_all_voltage(
-                df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage-2"
-            )
-            if active_tab_2 == "tab-voltage"
-            else dash.no_update
-        )
-        graph_all_temperature2 = (
-            update_graph_all_temperature(
-                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature-2"
-            )
-            if active_tab_2 == "tab-temperature"
-            else dash.no_update
-        )
-        graph_sum_power2 = (
-            update_graph_sum_power(
-                df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power-2"
-            )
-            if active_tab_2 == "tab-power"
-            else dash.no_update
-        )
-
-        return (
-            table_data,
-            table_columns,
-            sequence_status,
-            app_loading_status,
-            graph_object_temp,
-            graph_all_current,
-            graph_all_current2,
-            graph_all_voltage,
-            graph_all_voltage2,
-            graph_all_temperature,
-            graph_all_temperature2,
-            graph_sum_power,
-            graph_sum_power2,
-            {"display": "none"}
-        )
+        finally:
+            set_callback_lock("update_components_from_store", False)

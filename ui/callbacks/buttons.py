@@ -15,8 +15,7 @@ from ui.data_store import (
     get_recovered_data,
 )
 
-
-# Helper function to get the file name of a new CSV to be downloaded as a string
+# Helper function to get the file name of a new CSV to be downloaded as a string 
 def get_CSV_file_name():
     time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
     return f"TEC_data_{time}.csv"
@@ -47,9 +46,7 @@ def button_callbacks(app):
 
         df = get_data_for_download(selected_options)
 
-
-        time = datetime.now()
-        return dcc.send_data_frame(df.to_csv, f"TEC_data_{time}.csv")
+        return dcc.send_data_frame(df.to_csv, get_CSV_file_name())
 
     # when the recover data btn is pressed
     @app.callback(
