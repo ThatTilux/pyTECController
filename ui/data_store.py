@@ -167,8 +167,9 @@ def get_data_for_download(selected_columns):
     df = get_data_both_channels()
     
     # only keep selected columns
-    selected_columns = ["timestamp"] + selected_columns
-    df = df[selected_columns]
+    if selected_columns is not None:
+        selected_columns = ["timestamp"] + selected_columns
+        df = df[selected_columns]
     
     df_pivot = prepare_df_for_download(df)
     
