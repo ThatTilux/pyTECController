@@ -21,12 +21,12 @@ For the TECs, the ETX11-12-F1-4040-TA-RT-W6 model is used. For the PID control b
    ```
 
 ### Set up Port Allocations
-Determine the serial ports assigned to each of the four TEC controllers. This assignment may vary by device:
-1. Connect the TEC controllers via USB.
-2. Open the `Device Manager` on Windows and head to the section `Ports (COM & LPT)`. The four connected TEC Controllers should appear as `USB Serial Port (COMX)`, where X is the assigned port number.
-3. Identify each TEC controller's serial port by disconnecting and reconnecting them one by one, if necessary.
+Determine the serial ports assigned to each of the four PID control boards. This assignment may vary by device:
+1. Connect the control boards via USB.
+2. Open the `Device Manager` on Windows and head to the section `Ports (COM & LPT)`. The four connected control boards should appear as `USB Serial Port (COMX)`, where X is the assigned port number.
+3. Identify each board's serial port by disconnecting and reconnecting them one by one, if necessary.
 
-Update the `serial_ports.py` file in the `app` directory. Assign the serial ports for the top TEC controllers to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
+Update the `serial_ports.py` file in the `app` directory. Assign the serial ports for the top control boards to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
 For example:
 ```
 PORTS = {
