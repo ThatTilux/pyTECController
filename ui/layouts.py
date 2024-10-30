@@ -30,7 +30,7 @@ def layout(app):
                     # will be displayed in case of dummy-mode
                     html.Div(
                         html.H3(
-                            "Could not establish a connection to the TECs. Using pre-recorded data instead.",
+                            "Could not establish a connection to the TECs. Showing pre-recorded data instead.",
                             style={"color": "red"},
                         ),
                         id="dummy-mode-container",
