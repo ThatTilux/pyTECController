@@ -13,7 +13,7 @@ PARAM_VALUES = {
     "lower error threshold": [
         4010,
         "degC",
-        0, 
+        -7, 
     ],  # min temperature (will shut off when below)
     "upper error threshold": [
         4011,
