@@ -10,7 +10,7 @@ import redis
 
 import pandas as pd
 
-from app.serial_ports import NUM_TECS
+from app.param_values import NUM_TECS
 
 # timestamp of the last data pulled
 _last_data_timestamp = None

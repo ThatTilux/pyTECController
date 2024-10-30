@@ -2,7 +2,7 @@ from dash.dependencies import Output, Input, State
 import dash
 import pandas as pd
 
-from app.serial_ports import NUM_TECS
+from app.param_values import NUM_TECS
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.components.graphs import (
     format_timestamps,
