@@ -11,30 +11,23 @@ import redis
 import pandas as pd
 
 from app.param_values import NUM_TECS
+from redis_keys import (
+    REDIS_HOST,
+    REDIS_KEY_DUMMY_MODE,
+    REDIS_KEY_PREFIX_CALLBACK_LOCK,
+    REDIS_KEY_PREVIOUS_DATA,
+    REDIS_KEY_RECONNECTING,
+    REDIS_KEY_STORE_ALL,
+    REDIS_PORT,
+    REDIS_KEY_STORE,
+)
 
 # timestamp of the last data pulled
 _last_data_timestamp = None
 
 # redis connection for storing data
-r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
 
-# stores current data
-REDIS_KEY_STORE = "tec-data-store"
-
-# stores data that was too old for the above storage
-REDIS_KEY_STORE_ALL = "tec-data-store-all"
-
-# channel for recovered data
-REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
-
-# channel for callback locks
-REDIS_KEY_PREFIX_CALLBACK_LOCK = "tec-callback-lock:"
-
-# channel for notifying the ui in case of dummy mode
-REDIS_KEY_DUMMY_MODE = "mode"
-
-# channel for notifying the ui in case of reconnecting
-REDIS_KEY_RECONNECTING = "tec-data-reconnecting"
 
 # delete all callback lock channels
 for key in r.scan_iter(f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}*"):
@@ -47,7 +40,7 @@ try:
     pubsub_reconnecting = r.pubsub()
     pubsub_reconnecting.subscribe(REDIS_KEY_RECONNECTING)
 except Exception as e:
-    for i in range (3):
+    for i in range(3):
         print(
             f"[ERROR] Redis is offline. Please start redis and then restart this program."
         )
@@ -133,6 +126,7 @@ def get_data_both_channels():
 
     return df
 
+
 def prepare_df_for_download(df):
     """
     Converts internally used dataframe into a format that is convenient for data analysis;
@@ -142,48 +136,55 @@ def prepare_df_for_download(df):
     Whitespaces in column names are replaced by underscores.
     """
     # pivot to change index to timestamp
-    df_pivot = df.pivot_table(index='timestamp', columns=['Plate', 'TEC'])
-    
+    df_pivot = df.pivot_table(index="timestamp", columns=["Plate", "TEC"])
+
     # Rename columns
-    df_pivot.columns = [f'{lvl1}_{lvl2}_{lvl3}' for lvl1, lvl2, lvl3 in df_pivot.columns]
-    
+    df_pivot.columns = [
+        f"{lvl1}_{lvl2}_{lvl3}" for lvl1, lvl2, lvl3 in df_pivot.columns
+    ]
+
     # add "time_since_start" column
     start_time = df_pivot.index.min()
-    df_pivot['time_since_start'] = df_pivot.index - start_time
-    
+    df_pivot["time_since_start"] = df_pivot.index - start_time
+
     # Reorder columns to make 'time_since_start' the first column
-    columns = ['time_since_start'] + [col for col in df_pivot.columns if col != 'time_since_start']
+    columns = ["time_since_start"] + [
+        col for col in df_pivot.columns if col != "time_since_start"
+    ]
     df_pivot = df_pivot[columns]
-    
+
     # replace whitespaces and tabs in column names with underscores
-    df_pivot.columns = df_pivot.columns.str.replace(r'\s+', '_', regex=True)
-    
+    df_pivot.columns = df_pivot.columns.str.replace(r"\s+", "_", regex=True)
+
     return df_pivot
+
 
 def get_data_for_download(selected_columns):
     """
     Gets the data from both channels and changes the format.
     """
     df = get_data_both_channels()
-    
+
     # only keep selected columns
     if selected_columns is not None:
         selected_columns = ["timestamp"] + selected_columns
         df = df[selected_columns]
-    
+
     df_pivot = prepare_df_for_download(df)
-    
+
     return df_pivot
+
 
 def get_recovered_data():
     """
     Gets the data that was saved from the previous session.
     """
     df = get_data_from_store(REDIS_KEY_PREVIOUS_DATA)
-    
+
     df_pivot = prepare_df_for_download(df)
-    
+
     return df_pivot
+
 
 def update_store(new_data, channel=REDIS_KEY_STORE):
     """
@@ -241,6 +242,7 @@ def transfer_rows(df):
 
     return df
 
+
 def detect_dummy():
     """
     Listens to a pubsub channel to check if dummy mode was activated
@@ -259,15 +261,16 @@ def detect_dummy():
         message = pubsub_dummy_mode.get_message()
     return False
 
+
 def check_reconnecting():
     """
     Listens to a pubsub channel to check if the data acquisition is reconnecting.
-    
+
     Returns: 0 if there is no new message, 1 if data acquisition is reconnecting, 2 if it is back online
     """
     global pubsub_reconnecting
     message = pubsub_reconnecting.get_message()
-    
+
     while message:
         if message["type"] == "message":
             # format is either ConnectionReestablished$${time()} or Reconnecting$${time()}
@@ -281,6 +284,7 @@ def check_reconnecting():
         message = pubsub_dummy_mode.get_message()
     return 0
 
+
 def set_callback_lock(id, lock):
     """
     Locks or unlocks a callback via Redis.
@@ -289,7 +293,8 @@ def set_callback_lock(id, lock):
         lock (bool): A boolean value indicating whether to lock (True) or unlock (False) the callback.
     """
     key = f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}:{id}"
-    r.set(key, '1' if lock else '0')
+    r.set(key, "1" if lock else "0")
+
 
 def get_callback_lock(id):
     """
@@ -304,6 +309,4 @@ def get_callback_lock(id):
     if value is None:
         return False
     else:
-        return value == '1'
-            
-    
+        return value == "1"

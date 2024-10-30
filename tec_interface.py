@@ -6,7 +6,7 @@ This class acts as an interface between the app (SystemTECController.py) and the
 try:
     from app.serial_ports import PORTS
 except ImportError as e:
-    for i in range (3):
+    for i in range(3):
         print(
             f"[ERROR] Please create the serial_ports.py file. See README for details."
         )
@@ -19,10 +19,18 @@ from time import sleep, time
 import pandas as pd
 
 from mecom.exceptions import ResponseException
+from redis_keys import (
+    REDIS_HOST,
+    REDIS_KEY_STORE,
+    REDIS_KEY_STORE_ALL,
+    REDIS_KEY_DUMMY_MODE,
+    REDIS_KEY_PREVIOUS_DATA,
+    REDIS_KEY_RECONNECTING,
+    REDIS_PORT,
+)
 from ui.callbacks.graphs_tables import _convert_timestamps
 from ui.components.graphs import format_timestamps
 from ui.data_store import get_data_both_channels, get_data_from_store, update_store
-    
 
 
 class TECInterface:
@@ -144,22 +152,7 @@ class DummyInterface:
 if __name__ == "__main__":
 
     # connect to the redis storage
-    r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
-
-    # channel for the current data
-    REDIS_KEY = "tec-data-store"
-
-    # channel for the current data that is too old to be displayed
-    REDIS_KEY_ALL = "tec-data-store-all"
-
-    # recovered data from last session
-    REDIS_KEY_PREVIOUS_DATA = "tec-data-store-previous"
-
-    # inform UI of dummy mode
-    REDIS_KEY_DUMMY_MODE = "mode"
-
-    # inform the UI that data acquisition is reconnecting
-    REDIS_KEY_RECONNECTING = "tec-data-reconnecting"
+    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
 
     # save all previous data
     r.delete(REDIS_KEY_PREVIOUS_DATA)
@@ -167,8 +160,8 @@ if __name__ == "__main__":
     update_store(previous_data, REDIS_KEY_PREVIOUS_DATA)
 
     # clean up the data channels
-    r.delete(REDIS_KEY)
-    r.delete(REDIS_KEY_ALL)
+    r.delete(REDIS_KEY_STORE)
+    r.delete(REDIS_KEY_STORE_ALL)
     r.delete(REDIS_KEY_DUMMY_MODE)
     r.delete(REDIS_KEY_RECONNECTING)
 
