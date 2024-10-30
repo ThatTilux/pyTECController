@@ -248,11 +248,11 @@ def graphs_tables_callbacks(app):
         df_all = get_data_from_store()
 
         if df_all is None:
-            return (dash.no_update,) * 14
+            return dash.no_update
         
         # check that this callback is not already running
         if get_callback_lock("update_components_from_store"):
-            return (dash.no_update,) * 14
+            return dash.no_update
 
         # set the lock
         set_callback_lock("update_components_from_store", True)
@@ -269,7 +269,7 @@ def graphs_tables_callbacks(app):
             df_all = get_data_from_store()
 
             if df_all is None:
-                return (dash.no_update,) * 13
+                return dash.no_update
 
             # update table
             # get the most recent measurement
