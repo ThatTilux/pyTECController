@@ -2,12 +2,19 @@
 This class acts as an interface between the app (SystemTECController.py) and the UI
 """
 
-import base64
-import io
+# Make sure the user set up the serial_ports file
+try:
+    from app.serial_ports import PORTS
+except ImportError as e:
+    for i in range (3):
+        print(
+            f"[ERROR] Please create the serial_ports.py file. See README for details."
+        )
+    input("Press Enter to continue....")
+    exit()
 
 import redis
 from app.system_tec_controller import SystemTECController
-from app.serial_ports import PORTS
 from time import sleep, time
 import pandas as pd
 
@@ -15,6 +22,7 @@ from mecom.exceptions import ResponseException
 from ui.callbacks.graphs_tables import _convert_timestamps
 from ui.components.graphs import format_timestamps
 from ui.data_store import get_data_both_channels, get_data_from_store, update_store
+    
 
 
 class TECInterface:

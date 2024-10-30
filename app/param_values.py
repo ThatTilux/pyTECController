@@ -1,6 +1,9 @@
 """
-Defines some default parameters to prevent damage to components and optimal behavior.
+Defines some default parameters for the TEC controllers to prevent damage to components and optimal behavior.
 """
+
+# Number of Thermoelectric Coolers (TECs)
+NUM_TECS = 8
 
 # syntax
 # { display_name: [parameter_id, unit, limit]}

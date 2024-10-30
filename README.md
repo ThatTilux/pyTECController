@@ -26,14 +26,15 @@ Determine the serial ports assigned to each of the four PID control boards. This
 2. Open the `Device Manager` on Windows and head to the section `Ports (COM & LPT)`. The four connected control boards should appear as `USB Serial Port (COMX)`, where X is the assigned port number.
 3. Identify each board's serial port by disconnecting and reconnecting them one by one, if necessary.
 
-Update the `serial_ports.py` file in the `app` directory. Assign the serial ports for the top control boards to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
-For example:
+Create a file named `serial_ports.py` file in the `app` directory. Fill in the code below, replacing `COMX` with the respective serial port.
+Assign the serial ports for the top control boards to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
 ```
+# These are the serialport allocations for the 4 boards controlling the TECs when connected via USB.
 PORTS = {
-    "TOP_1": "COM5",
-    "TOP_2": "COM6",
-    "BOTTOM_1": "COM3",
-    "BOTTOM_2": "COM4"
+    "TOP_1": "COMX",
+    "TOP_2": "COMX",
+    "BOTTOM_1": "COMX",
+    "BOTTOM_2": "COMX",
 }
 ```
 
