@@ -4,10 +4,13 @@ import dash_bootstrap_components as dbc
 from app.param_values import TEMP_INPUT_LIMITS
 
 
-def input_group(input_type, input_id, label, unit, popover_content, min=0, max=TEMP_INPUT_LIMITS["max"], step=TEMP_INPUT_LIMITS["step"], value=None):
+def input_group(input_type, input_id, label, unit, popover_content, min=0, max=TEMP_INPUT_LIMITS["max"], step=TEMP_INPUT_LIMITS["step"], value=None, error_msg=""):
     """
     Creates an input group with a popover.
     """
+    
+    if error_msg == None:
+        error_msg = ""
     
     popover_content = popover_content+f"\nExpects values between {min} and {max}."
 
@@ -35,7 +38,7 @@ def input_group(input_type, input_id, label, unit, popover_content, min=0, max=T
                     ),
                 ],
             ),
-            html.Div("", id={"type": f"{input_type}-error", "index": input_id}, style={"color": "red"}),
+            html.Div(error_msg, id={"type": f"{input_type}-error", "index": input_id}, style={"color": "red"}),
         ],
         className="mb-3",
     )

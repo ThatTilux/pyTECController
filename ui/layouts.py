@@ -52,7 +52,9 @@ def layout(app):
                                     ),
                                     # creation and starting of sequences
                                     dbc.Tab(
-                                        html.Div(sequence_control_box(), className="mt-3"),
+                                        html.Div(
+                                            sequence_control_box(), className="mt-3"
+                                        ),
                                         label="Sequence",
                                     ),
                                 ]
@@ -80,12 +82,20 @@ def layout(app):
                     ),  # 1s, stop after 10 excecutions
                     # store for holding the indices and content of visible rows in the sequence manager
                     dcc.Store(
-                        id="visible-sequence-rows", data=PRECONFIGURED_SEQUENCE_DATA
+                        id="visible-sequence-rows",
+                        data=PRECONFIGURED_SEQUENCE_DATA,
+                        storage_type="session",
                     ),  # keys are strings since dash store will convert them to str anywys
+                    # store for holding info on whether or not a sequence is running
+                    dcc.Store(
+                        id="is-sequence-running",
+                        data=False,
+                        storage_type="session"
+                    ),
                     # hidden div to track whether the app is ready to be displayed
-                    html.Div(id="initial-load", style={"display": "none"})
+                    html.Div(id="initial-load", style={"display": "none"}),
                 ],
                 class_name="pt-2",
-            )
+            ),
         ]
     )

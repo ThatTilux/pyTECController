@@ -39,7 +39,7 @@ def sequence_btn_row(btn_id):
     )
 
 
-def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
+def sequence_input_row(id_prefix, row_id, data=(None, None, None, None), error_msg=(None, None, None, None)):
     """
     A row for the sequence input, i.e., one step of the sequence.
     data might default values. Format: (top_target, bottom_target, num_steps, time)
@@ -47,6 +47,9 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
     
     if data is None or len(data) < 4:
         data = (None, None, None, None)
+
+    if error_msg is None or len(error_msg) < 4:
+        error_msg = (None, None, None, None)
 
     return dbc.Row(
         [
@@ -65,6 +68,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     min=TEMP_INPUT_LIMITS["min"],
                     max=TEMP_INPUT_LIMITS["max"],
                     value=data[0],
+                    error_msg=error_msg[0]
                 ),
                 class_name="d-flex justify-content-end",
                 width=2,
@@ -79,6 +83,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     min=TEMP_INPUT_LIMITS["min"],
                     max=TEMP_INPUT_LIMITS["max"],
                     value=data[1],
+                    error_msg=error_msg[1] 
                 ),
                 class_name="d-flex justify-content-center",
                 width=2,
@@ -94,6 +99,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     max=100,
                     step=1,
                     value=data[2],
+                    error_msg=error_msg[2]
                 ),
                 class_name="d-flex justify-content-center",
                 width=2,
@@ -109,6 +115,7 @@ def sequence_input_row(id_prefix, row_id, data=(None, None, None, None)):
                     max=24*60*60, #24h
                     step=1,
                     value=data[3],
+                    error_msg=error_msg[3]
                 ),
                 class_name="d-flex justify-content-start",
                 width=2,

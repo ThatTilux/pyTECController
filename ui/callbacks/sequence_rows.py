@@ -13,14 +13,37 @@ def sequence_rows_callbacks(app):
     @app.callback(
         Output("dynamic-sequence-rows", "children"),
         Input("visible-sequence-rows", "data"),
+        [
+            State({"type": "sequence-row-top-plate-error", "index": ALL}, "children"),
+            State(
+                {"type": "sequence-row-bottom-plate-error", "index": ALL}, "children"
+            ),
+            State({"type": "sequence-row-num-steps-error", "index": ALL}, "children"),
+            State({"type": "sequence-row-time-sleep-error", "index": ALL}, "children"),
+        ],
         prevent_initial_callback=False,
     )
-    def render_rows(rows_data):
+    def render_rows(
+        rows_data,
+        top_plate_errors,
+        bottom_plate_errors,
+        num_steps_errors,
+        time_sleep_errors,
+    ):
         row_keys = list(map(int, rows_data.keys()))  # Convert keys to integers
 
+        error_msg = list(zip(
+            top_plate_errors, bottom_plate_errors, num_steps_errors, time_sleep_errors
+        ))
+
         return [
-            sequence_input_row("sequence-row", row_id=i, data=rows_data[str(i)])
-            for i in row_keys
+            sequence_input_row(
+            "sequence-row",
+            row_id=row_key,
+            data=rows_data[str(row_key)],
+            error_msg=error_msg[index] if index < len(error_msg) else None,
+            )
+            for index, row_key in enumerate(row_keys)
         ]
 
     # updates the store with the row indices based on pressed buttons
@@ -28,6 +51,7 @@ def sequence_rows_callbacks(app):
     @app.callback(
         Output("visible-sequence-rows", "data"),
         [
+            Input("btn-submit-sequence", "n_clicks"),
             Input({"type": "add-remove-btn", "index": ALL, "action": ALL}, "n_clicks"),
         ],
         [
@@ -40,7 +64,13 @@ def sequence_rows_callbacks(app):
         prevent_initial_call=True,
     )
     def update_rows(
-        n_clicks, top_data, bottom_data, num_steps_data, time_sleep_data, rows_data
+        n_clicks_submit,
+        n_clicks,
+        top_data,
+        bottom_data,
+        num_steps_data,
+        time_sleep_data,
+        rows_data,
     ):
         # save all the data
         # *_data should all have the same length
@@ -60,7 +90,7 @@ def sequence_rows_callbacks(app):
             else:
                 # if the inout fields are not rendered yet, no data
                 rows_data[str(row_index)] = []
-                
+
         # Check if there is at least one button click
         # dash triggeres this callback on startup for some reason; this checks that
         if not any(click is not None for click in n_clicks):
@@ -69,14 +99,20 @@ def sequence_rows_callbacks(app):
         # if the user spams a btn, this callback might be executed twice with same input
         # this leads to an IndexError/KeyError.
         try:
-            # get which btn was pressed
+            # Check if the submit btn triggered this callback
+            triggered_id = ctx.triggered_id
+            if triggered_id == "btn-submit-sequence":
+                # The submit button was clicked; just update the data
+                return rows_data
+
+            # callback was triggered by add/remove btn. Determine which one
             changed_id = ctx.triggered[0]["prop_id"].split(".")[0]
             if changed_id:
                 # get the action info
                 action_info = json.loads(changed_id)
                 # get index of affected row
                 row_index = action_info["index"]
-                
+
                 # get the action (add/remove)
                 if action_info["action"] == "add":
                     rows_data[str(max(row_keys) + 1)] = [
@@ -101,13 +137,7 @@ def sequence_rows_callbacks(app):
             ),
             Output({"type": "sequence-row-num-steps-error", "index": ALL}, "children"),
             Output({"type": "sequence-row-time-sleep-error", "index": ALL}, "children"),
-            Output({"type": "sequence-row-top-plate", "index": ALL}, "disabled"),
-            Output({"type": "sequence-row-bottom-plate", "index": ALL}, "disabled"),
-            Output({"type": "sequence-row-num-steps", "index": ALL}, "disabled"),
-            Output({"type": "sequence-row-time-sleep", "index": ALL}, "disabled"),
-            Output("btn-submit-sequence", "disabled"),
-            Output("btn-pause-sequence", "disabled"),
-            Output("btn-skip-sequence-step", "disabled"),
+            Output("is-sequence-running", "data"),
         ],
         [
             Input("btn-submit-sequence", "n_clicks"),
@@ -145,18 +175,8 @@ def sequence_rows_callbacks(app):
                 time_sleep_values,
             ]
         ]
-        # disabled states of all input fields
-        disable_states = [
-            [False] * len(values)
-            for values in [
-                top_plate_values,
-                bottom_plate_values,
-                num_steps_values,
-                time_sleep_values,
-            ]
-        ]
 
-        btn_submit_disabled = False
+        valid_sequence = False
 
         # if the callback was initiated through the stop button or the stop trigger, enable the input fields and stop TECs
         if "btn-stop-sequence" in triggered_id:
@@ -165,7 +185,7 @@ def sequence_rows_callbacks(app):
             # tell the sequence manager
             stop_sequence()
             # enable all input fields and clear errors
-            return *error_messages, *disable_states, btn_submit_disabled, not btn_submit_disabled, not btn_submit_disabled
+            return *error_messages, False
 
         # this will be used to create a sequence
         results = []
@@ -202,12 +222,56 @@ def sequence_rows_callbacks(app):
 
         if not found_error:
             # Disable all inputs if no error
-            disable_states = [[True] * len(values) for values in disable_states]
-            btn_submit_disabled = True
+            valid_sequence = True
 
             # create the sequence
-            # TODO make sure the first tuple has num_steps = 1
             if len(results) > 0:
                 set_sequence(results)
 
-        return *error_messages, *disable_states, btn_submit_disabled, not btn_submit_disabled, not btn_submit_disabled
+        return *error_messages, valid_sequence
+
+    # update disabled states of sequence UI
+    @app.callback(
+        [
+            Output({"type": "sequence-row-top-plate", "index": ALL}, "disabled"),
+            Output({"type": "sequence-row-bottom-plate", "index": ALL}, "disabled"),
+            Output({"type": "sequence-row-num-steps", "index": ALL}, "disabled"),
+            Output({"type": "sequence-row-time-sleep", "index": ALL}, "disabled"),
+            Output({"type": "add-remove-btn", "index": ALL, "action": ALL}, "disabled"),
+            Output("btn-submit-sequence", "disabled"),
+            Output("btn-pause-sequence", "disabled"),
+            Output("btn-skip-sequence-step", "disabled"),
+        ],
+        [
+            Input("is-sequence-running", "data"),
+        ],
+        [
+            State(
+                {"type": "sequence-row-top-plate", "index": ALL}, "value"
+            ),  # needed to get number of rows
+        ],
+    )
+    def sequence_status_change(is_sequence_running, top_plate_values):
+        disable_submit_sequence = is_sequence_running
+        disable_pause_sequence = not is_sequence_running
+        disable_skip_sequence_step = not is_sequence_running
+
+        form_fields_disabled = [
+            [is_sequence_running] * len(values)
+            for values in [
+                top_plate_values,
+                top_plate_values,
+                top_plate_values,
+                top_plate_values,
+            ]
+        ]
+
+        add_remove_btns_disabled = [[is_sequence_running] * (len(top_plate_values) + 1)]
+
+        return (
+            *form_fields_disabled,
+            *add_remove_btns_disabled,
+            disable_submit_sequence,
+            disable_pause_sequence,
+            disable_skip_sequence_step,
+        )
