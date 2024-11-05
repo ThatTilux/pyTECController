@@ -88,6 +88,9 @@ class SystemTECController:
         # Concatenate all small DataFrames and set multi-index
         df = pd.concat(frames).set_index(['Plate', 'TEC']).sort_index()
         
+        # sort the df by 'Plate' reverse alphabetical order and then by 'TEC' ascendingly
+        df = df.sort_values(by=['Plate', 'TEC'], ascending=[False, True])
+        
         # add power column
         df["output power"] = (df["output current"] * df["output voltage"]).abs()
         

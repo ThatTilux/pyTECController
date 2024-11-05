@@ -189,7 +189,7 @@ def update_measurement_table(_df):
         + "_"
         + df.index.get_level_values("TEC").astype(str)
     )
-
+    
     # create column odering so label is first
     cols = ["Label"] + [col for col in df.columns if col != "Label"]
 

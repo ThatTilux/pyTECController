@@ -343,6 +343,13 @@ def update_graph_object_temperature(df, fig_id):
             showlegend=True,
         )
     )
+    
+    # Reorder legend entries dynamically
+    fig.update_layout(
+        legend=dict(
+            traceorder="reversed" 
+        )
+    )
 
     # force the plot to always only have 2 ticks
     _force_two_ticks(fig, avg_temps)
