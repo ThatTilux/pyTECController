@@ -9,6 +9,16 @@ The 4 PID control boards need to be connected to the device running this softwar
 
 For the TECs, the ETX11-12-F1-4040-TA-RT-W6 model is used. For the PID control boards, the TEC-1161-10A-PT100-PIN model is used.
 
+## Features
+This application has features two modes of controlling the TECs:
+1. **Temperature Control Mode**
+      - Users can manually set a target temperature for each plate independently.
+2. **Sequence Mode**
+      - Users can define a series of temperature setpoints with corresponding wait times.
+      - The sequence is executed automatically. 
+
+Live and historic data (temperature, current, voltage, power) is displayed in dynamic plots. All recorded data can be downloaded in CSV for further analysis.
+
 ## Installation
 ### Prerequisites
 
@@ -115,6 +125,16 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    ```
    .\start.bat
    ```
+
+## User Interface
+<img width="800" alt="UI Preview 1" src="https://github.com/user-attachments/assets/2d1dd8d3-e35e-4dff-bdd3-1065a6195882">
+<img width="800" alt="UI Preview 2" src="https://github.com/user-attachments/assets/3f274e06-a3ec-4381-ad48-fb0c2b8adf4f">
+<img width="800" alt="UI Preview 3" src="https://github.com/user-attachments/assets/ec9104ed-1988-4030-8570-47fab6ec4fed">
+
+
+
+
+
 
 ## Author
 **Ole Kuhlmann**
