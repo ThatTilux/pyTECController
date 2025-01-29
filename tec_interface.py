@@ -19,6 +19,7 @@ from time import sleep, time
 import pandas as pd
 
 from mecom.exceptions import ResponseException
+from mecom.mecom import MeComSerial
 from redis_keys import (
     REDIS_HOST,
     REDIS_KEY_STORE,
@@ -115,6 +116,41 @@ class TECInterface:
                 self.disable_all_plates()
             case "ENABLE_ALL":
                 self.enable_all_plates()
+                
+    @staticmethod
+    def test_serial_connection(port):
+        """
+        Attempts to connect to a TEC device via the specified serial port. Ensures
+        that the connection is properly established and closed.
+
+        Args:
+            port (str): The serial port to connect to.
+
+        Returns:
+            bool: True if the connection was successful, False otherwise.
+        """
+        try:
+            # Attempt to initialize the connection
+            with MeComSerial(serialport=port) as device: # 'with' ensures __enter__ and __exit__ are called 
+                return True  
+        except Exception as e:
+            return False  
+        
+    @staticmethod
+    def test_serial_connections(ports):
+        """
+        Attempts to connect to multiple TEC devices via the serial porta provided.
+
+        Args:
+            ports (dict): Dict with labels as keys and serial ports as values.
+
+        Returns:
+            dict: Labels with bools as values, corresponding to a (non) successful connection.
+        """
+        connection_success = dict()
+        for label, port in ports.items():
+            connection_success[label] = TECInterface.test_serial_connection(port)
+        return connection_success
 
 
 class DummyInterface:
@@ -150,6 +186,25 @@ class DummyInterface:
 
 # this is the data aquisition program
 if __name__ == "__main__":
+    
+    
+    # TEMP BEGIN
+    
+    while True:
+        time_start = time()
+        connection_stati = TECInterface.test_serial_connections(PORTS)
+        time_delta = time() - time_start
+        successful_connections = [label for label in connection_stati.keys() if connection_stati[label]]
+        unsuccessful_connections = [label for label in connection_stati.keys() if not connection_stati[label]]
+        print("-------------------------------------------------")
+        print(f"Connected: {', '.join(successful_connections)}")
+        print(f"Not connected: {', '.join(unsuccessful_connections)}")
+        print(f"Time: {time_delta}")
+        print("-------------------------------------------------")
+        
+        sleep(1)
+    
+    # TEMP END
 
     # connect to the redis storage
     r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
