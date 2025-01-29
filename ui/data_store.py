@@ -4,7 +4,7 @@ Handles the data store. Dataframes are converted to base64 using parquet and the
 
 import base64
 import io
-from time import time
+from time import sleep, time
 import dash
 import redis
 
@@ -13,10 +13,10 @@ import pandas as pd
 from app.param_values import NUM_TECS
 from redis_keys import (
     REDIS_HOST,
-    REDIS_KEY_DUMMY_MODE,
     REDIS_KEY_PREFIX_CALLBACK_LOCK,
     REDIS_KEY_PREVIOUS_DATA,
     REDIS_KEY_RECONNECTING,
+    REDIS_KEY_TEC_CONNECTION_STATUS,
     REDIS_KEY_STORE_ALL,
     REDIS_PORT,
     REDIS_KEY_STORE,
@@ -33,12 +33,13 @@ r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
 for key in r.scan_iter(f"{REDIS_KEY_PREFIX_CALLBACK_LOCK}*"):
     r.delete(key)
 
-# subscribe to dummy mode channel
+# subscribe pubsub channels
 try:
-    pubsub_dummy_mode = r.pubsub()
-    pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
     pubsub_reconnecting = r.pubsub()
     pubsub_reconnecting.subscribe(REDIS_KEY_RECONNECTING)
+
+    pubsub_connection_status = r.pubsub()
+    pubsub_connection_status.subscribe(REDIS_KEY_TEC_CONNECTION_STATUS)
 except Exception as e:
     for i in range(3):
         print(
@@ -243,25 +244,6 @@ def transfer_rows(df):
     return df
 
 
-def detect_dummy():
-    """
-    Listens to a pubsub channel to check if dummy mode was activated
-    """
-    global pubsub_dummy_mode
-    message = pubsub_dummy_mode.get_message()
-
-    # if the backend posted a message to the channel, dummy mode is activated
-    while message:
-        if message["type"] == "message":
-            # the format should be True$$time()
-            data = message["data"].split("$$")
-            # dummy message should not be older than 10s
-            if data[0] == "True" and time() - float(data[1]) <= 10:
-                return True
-        message = pubsub_dummy_mode.get_message()
-    return False
-
-
 def check_reconnecting():
     """
     Listens to a pubsub channel to check if the data acquisition is reconnecting.
@@ -281,8 +263,61 @@ def check_reconnecting():
                     return 1
                 if data[0] == "ConnectionReestablished":
                     return 2
-        message = pubsub_dummy_mode.get_message()
+        message = pubsub_reconnecting.get_message()
     return 0
+
+
+def get_connection_status():
+    """
+    Retrieves the latest connection status message from the pubsub channel. Will run until a message is received.
+    
+    Returns:
+        A dictionary with the connection status of the TECs, with labels as keys and:
+        - True if the connection is online
+        - False if it is offline
+        Returns None if no valid message is available.
+    """
+    global pubsub_connection_status
+
+    latest_message = None
+
+    # Drain the queue to get the newest message
+    while True:
+        message = pubsub_connection_status.get_message()
+        if not message or message["type"] != "message":
+            break  # No more messages in the queue
+
+        latest_message = message  # Keep overwriting with the latest message
+
+    if latest_message is None:
+        # No message received, try again
+        sleep(0.3)
+        return get_connection_status()    
+
+    # Extract message data
+    data = latest_message["data"].split("$$")
+    if len(data) < 3:
+        return None  # Invalid message format
+
+    successful_connections = data[0].split("$")
+    unsuccessful_connections = data[1].split("$")
+
+    try:
+        timestamp = float(data[2])
+    except ValueError:
+        return None  # Invalid timestamp
+
+    # Ensure the message was sent within the last second
+    if timestamp + 1 < time():
+        # try again
+        sleep(0.1)
+        return get_connection_status()  
+
+    # Build connection status dictionary
+    connection_status = {conn: True for conn in successful_connections if conn}
+    connection_status.update({conn: False for conn in unsuccessful_connections if conn})
+
+    return dict(sorted(connection_status.items()))  # Return sorted dictionary
 
 
 def set_callback_lock(id, lock):

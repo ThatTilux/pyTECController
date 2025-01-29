@@ -22,11 +22,13 @@ from mecom.exceptions import ResponseException
 from mecom.mecom import MeComSerial
 from redis_keys import (
     REDIS_HOST,
+    REDIS_KEY_START_BACKEND_FEEDBACK,
     REDIS_KEY_STORE,
     REDIS_KEY_STORE_ALL,
-    REDIS_KEY_DUMMY_MODE,
+    REDIS_KEY_TEC_CONNECTION_STATUS,
     REDIS_KEY_PREVIOUS_DATA,
     REDIS_KEY_RECONNECTING,
+    REDIS_KEY_UI_COMMANDS,
     REDIS_PORT,
 )
 from ui.callbacks.graphs_tables import _convert_timestamps
@@ -116,7 +118,7 @@ class TECInterface:
                 self.disable_all_plates()
             case "ENABLE_ALL":
                 self.enable_all_plates()
-                
+
     @staticmethod
     def test_serial_connection(port):
         """
@@ -131,11 +133,13 @@ class TECInterface:
         """
         try:
             # Attempt to initialize the connection
-            with MeComSerial(serialport=port) as device: # 'with' ensures __enter__ and __exit__ are called 
-                return True  
+            with MeComSerial(
+                serialport=port
+            ) as device:  # 'with' ensures __enter__ and __exit__ are called
+                return True
         except Exception as e:
-            return False  
-        
+            return False
+
     @staticmethod
     def test_serial_connections(ports):
         """
@@ -184,28 +188,13 @@ class DummyInterface:
         pass
 
 
-# this is the data aquisition program
-if __name__ == "__main__":
-    
-    
-    # TEMP BEGIN
-    
-    while True:
-        time_start = time()
-        connection_stati = TECInterface.test_serial_connections(PORTS)
-        time_delta = time() - time_start
-        successful_connections = [label for label in connection_stati.keys() if connection_stati[label]]
-        unsuccessful_connections = [label for label in connection_stati.keys() if not connection_stati[label]]
-        print("-------------------------------------------------")
-        print(f"Connected: {', '.join(successful_connections)}")
-        print(f"Not connected: {', '.join(unsuccessful_connections)}")
-        print(f"Time: {time_delta}")
-        print("-------------------------------------------------")
-        
-        sleep(1)
-    
-    # TEMP END
+def setup_redis():
+    """
+    Sets up all redis channels.
 
+    Returns:
+        redis object, pubsub object for listening to UI commands.
+    """
     # connect to the redis storage
     r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
 
@@ -217,38 +206,101 @@ if __name__ == "__main__":
     # clean up the data channels
     r.delete(REDIS_KEY_STORE)
     r.delete(REDIS_KEY_STORE_ALL)
-    r.delete(REDIS_KEY_DUMMY_MODE)
     r.delete(REDIS_KEY_RECONNECTING)
+    r.delete(REDIS_KEY_TEC_CONNECTION_STATUS)
 
-    pubsub_dummy_mode = r.pubsub()
-    pubsub_dummy_mode.subscribe(REDIS_KEY_DUMMY_MODE)
-    pubsub_dummy_mode.subscribe(REDIS_KEY_RECONNECTING)
-
-    # listen to ui commands channel
     pubsub = r.pubsub()
-    pubsub.subscribe("ui_commands")
+    pubsub.subscribe(REDIS_KEY_UI_COMMANDS)
 
-    # try to connect to the TECs
-    # use dummy data if connection unsuccessful
-    dummy = False
+    return r, pubsub
+
+
+def inform_ui_connection_status(r, connection_status):
+    """
+    Informs the UI via redis channel REDIS_KEY_TEC_CONNECTION_STATUS of the connection status of all TECs.
+
+    Args:
+        r (redis.Redis): Redis connection object.
+        connection_status (dict): Dictionary with connection status of each port.
+    """
+    # Parse successful and unsuccessful connections to message
+    successful_connections = [
+        label for label in connection_status.keys() if connection_status[label]
+    ]
+    unsuccessful_connections = [
+        label for label in connection_status.keys() if not connection_status[label]
+    ]
+    message = f"{'$'.join(successful_connections)}$${'$'.join(unsuccessful_connections)}$${time()}"
+
+    r.publish(REDIS_KEY_TEC_CONNECTION_STATUS, message)
+
+
+def wait_for_go(r, pubsub_ui_commands):
+    """
+    Provides UI with connection status of all ports and waits for instructions.
+
+    Args:
+        r (redis.Redis): Redis connection object.
+        pubsub_ui_commands (redis.client.PubSub): PubSub object for listening to UI commands.
+
+    Returns:
+        TECInterface object or DummyInterface object, depending on the UI choice.
+    """
+    while True:
+        time_start = time()
+
+        # Inform UI
+        connection_status = TECInterface.test_serial_connections(PORTS)
+        inform_ui_connection_status(r, connection_status)
+
+        # Listen for UI commands
+        message = pubsub_ui_commands.get_message()
+        while message and message["type"] == "message":
+            command = message["data"]
+            # Check which command was sent
+            try:
+                interface = None
+                match command:
+                    case "GO":
+                        print("UI signaled to start data acquisition.")
+                        interface = TECInterface()
+                    case "GO_DUMMY":
+                        print("UI signaled to start DUMMY data acquisition.")
+                        interface = DummyInterface("app/dummy_data/dummy.csv")
+
+                if interface:
+                    # Nofity UI of success
+                    r.publish(REDIS_KEY_START_BACKEND_FEEDBACK, f"SUCCESS$${time()}")
+                    return interface
+
+            except Exception as e:
+                print(f"Exception caught durig interface creation: {e}")
+                # Nofity UI of error
+                r.publish(REDIS_KEY_START_BACKEND_FEEDBACK, f"ERROR$${time()}")
+
+            message = pubsub_ui_commands.get_message()
+
+        print("Waiting for go from UI...")
+
+        # Wait
+        time_delta = time() - time_start
+        if time_delta < 1:
+            sleep(1 - time_delta)
+
+
+def data_aquisition(tec_interface, r, pubsub_ui_commands):
     # keep track if all TECs are online right now
     tecs_online = True
-    try:
-        tec_interface = TECInterface()
-    except Exception as e:
-        print(e)
-        tec_interface = DummyInterface("app/dummy_data/dummy.csv")
-        dummy = True
 
-    # pull data until program is stopped
+    # pull data until program is forcefully stopped
     while True:
         time_start = time()  # in seconds
 
         # listen to any UI commands
-        message = pubsub.get_message()
+        message = pubsub_ui_commands.get_message()
         while message and message["type"] == "message":
             tec_interface.handle_message(message)
-            message = pubsub.get_message()
+            message = pubsub_ui_commands.get_message()
 
         # get and store fresh data
         try:
@@ -271,12 +323,6 @@ if __name__ == "__main__":
             r.publish(REDIS_KEY_RECONNECTING, f"Reconnecting$${time()}")
             tecs_online = False
 
-        # Print dummy-info
-        if dummy:
-            print("TECs not connected. Using dummy data.")
-            # inform the UI of dummy mode
-            r.publish(REDIS_KEY_DUMMY_MODE, f"True$${time()}")
-
         # sleep to achieve a polling rate of 1Hz
         sleep_time = 1 - (time() - time_start)
         print(f"Sleeping for {sleep_time}s...")
@@ -286,3 +332,16 @@ if __name__ == "__main__":
             print(
                 "[WARNING]: Sampling rate fell below 1Hz. Lowering MAX_ROWS_STORAGE in ui.data_store might help."
             )
+
+
+# Entry point of data aquisition program here
+if __name__ == "__main__":
+
+    # set up redis
+    r, pubsub_ui_commands = setup_redis()
+
+    # wait for the UI to signal the start of this program
+    tec_interface = wait_for_go(r, pubsub_ui_commands)
+
+    # start the data aquisition
+    data_aquisition(tec_interface, r, pubsub_ui_commands)
