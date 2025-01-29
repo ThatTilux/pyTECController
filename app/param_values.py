@@ -1,5 +1,6 @@
 """
 Defines some default parameters for the TEC controllers to prevent damage to components and optimal behavior.
+Do not touch these unless you are aware of the consequences.
 """
 
 # Number of Thermoelectric Coolers (TECs)
@@ -18,7 +19,7 @@ PARAM_VALUES = {
     "upper error threshold": [
         4011,
         "degC",
-        97,
+        122, # this should not exceed 125 and absolutely CANNOT exceed 150 
     ],  # max temperature (will shut off when above)
     "kp": [3010, "", 90],
     "ti": [3011, "", 0],

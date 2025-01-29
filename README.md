@@ -1,12 +1,23 @@
 # pyTECController
-This software serves as a control system for a prototype magnet impregnation machine as part of the CERN FCC-ee HTS4 research project. The impregnation machine utilizes the novel approach of using paraffin wax to impregnate prototype CCT magnets built from HTS tape. This software communicates with the machine via serial and provides a user interface, featuring data display and control mechanisms for the machine. This software utilizes a modified version of the open-source [pyMeCom](https://github.com/spomjaksilp/pyMeCom) API to control the heating elements of the impregnator.
+This software serves as a control system for a prototype magnet impregnation machine as part of the CERN FCC-ee HTS4 research project. The impregnation machine utilizes the novel approach of using paraffin wax to impregnate prototype canted-cosine-theta (CCT) magnets built from high-temperature superconducting (HTS) tape. This software communicates with the machine via serial (USB) and provides a user interface featuring data display and control mechanisms for the machine. This software utilizes a modified version of the open-source [pyMeCom](https://github.com/spomjaksilp/pyMeCom) API to control the thermoelectric-coolers (TECs) of the impregnator.
 
 ## Background
 
 ### Impregnation Machine
-This prototype machine consists of an upright, cylindrical aluminium chamber encapsulating the magnet. Above and below this chamber are two copper plates (one each). These plates are heated by 4 Thermoelectric Coolers (TECs) each, creating a temperature gradient inside the chamber when heated to different temperatures. These 8 TECs in total are connected to 4 PID control boards with each board controlling two TECs. The 4 PID control boards need to be connected to the device running this software via serial (USB).
+At the heart of this prototype machine are two copper heat exchanger plates. The magnet is placed in an upright position between these plates, one touching the magnet form above and one from below. These plates are heated by 4 TECs each, creating a temperature gradient along the magnet when heated to different temperatures. These 8 TECs in total are connected to 4 PID control boards with each board controlling two TECs. Two PT100 temperature sensors per control board provide temperature readings of the corresponding copper plate.
+The 4 PID control boards need to be connected to the device running this software via serial.
 
 For the TECs, the ETX11-12-F1-4040-TA-RT-W6 model is used. For the PID control boards, the TEC-1161-10A-PT100-PIN model is used.
+
+## Features
+This application has features two modes of controlling the TECs:
+1. **Temperature Control Mode**
+      - Users can manually set a target temperature for each plate independently.
+2. **Sequence Mode**
+      - Users can define a series of temperature setpoints with corresponding wait times.
+      - The sequence is executed automatically. 
+
+Live and historic data (temperature, current, voltage, power) is displayed in dynamic plots. All recorded data can be downloaded in CSV for further analysis.
 
 ## Installation
 ### Prerequisites
@@ -109,11 +120,21 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    ```
    docker start tec-data-redis
    ```
-2. Connect the TEC control boards via USB. If none are connected, the software will run with some dummy data.
+2. Connect the TEC control boards via USB. If none are connected, the software will run with some pre-recorded data.
 3. Start this software by navigating to the root directory and executing the start file:
    ```
    .\start.bat
    ```
+
+## User Interface
+<img width="800" alt="UI Preview 1" src="https://github.com/user-attachments/assets/2d1dd8d3-e35e-4dff-bdd3-1065a6195882">
+<img width="800" alt="UI Preview 2" src="https://github.com/user-attachments/assets/3f274e06-a3ec-4381-ad48-fb0c2b8adf4f">
+<img width="800" alt="UI Preview 3" src="https://github.com/user-attachments/assets/ec9104ed-1988-4030-8570-47fab6ec4fed">
+
+
+
+
+
 
 ## Author
 **Ole Kuhlmann**

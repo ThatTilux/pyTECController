@@ -1,6 +1,7 @@
 from dash.dependencies import Output, Input, State
 import dash
 import pandas as pd
+import time
 
 from app.param_values import NUM_TECS
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
@@ -116,13 +117,17 @@ def is_graph_paused(n_clicks, n_clicks_2):
 
 def _convert_timestamps(df):
     """
-    Converts the timestamps into the datetime format and adds 2 hours for the time zone.
+    Converts the timestamps into the datetime format and adjusts for the system's local time offset.
     """
-    # convert Timestamp is a datetime type
+    # Convert timestamp to datetime
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+    
+    # Get local time offset in seconds
+    offset_seconds = time.localtime().tm_gmtoff
+    df["timestamp"] = df["timestamp"] + pd.Timedelta(seconds=offset_seconds)
 
-    # Adding 2 hours to each timestamp
-    df["timestamp"] = df["timestamp"] + pd.Timedelta(hours=2)
+    return df
+
 
 
 def update_measurement_table(_df):
@@ -184,7 +189,7 @@ def update_measurement_table(_df):
         + "_"
         + df.index.get_level_values("TEC").astype(str)
     )
-
+    
     # create column odering so label is first
     cols = ["Label"] + [col for col in df.columns if col != "Label"]
 
