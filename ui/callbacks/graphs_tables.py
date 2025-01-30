@@ -11,6 +11,7 @@ from ui.components.graphs import (
     update_graph_all_current,
     update_graph_all_temperature,
     update_graph_all_voltage,
+    update_graph_external_temperature,
     update_graph_object_temperature,
     update_graph_sum_power,
 )
@@ -237,6 +238,15 @@ def tail_exclude_external(df, num_rows):
     )
 
 
+def tail_only_external(df, num_rows):
+    """
+    Returns the last num_rows rows of the DataFrame only including the external TECs.
+    """
+    return df.loc[df.index.get_level_values("Plate").str.contains("external")].tail(
+        num_rows
+    )
+
+
 def graphs_tables_callbacks(app):
     @app.callback(  # handles the measurements table and all graphs
         [
@@ -245,6 +255,7 @@ def graphs_tables_callbacks(app):
             Output("sequence-status-container", "children"),
             Output("initial-load", "children"),
             Output("graph-object-temperature", "figure"),
+            Output("graph-object-temperature-external", "figure"),
             Output("graph-all-current", "figure"),
             Output("graph-all-current-2", "figure"),
             Output("graph-all-voltage", "figure"),
@@ -279,13 +290,15 @@ def graphs_tables_callbacks(app):
         reconnecting_code = check_reconnecting()
         if reconnecting_code == 1:
             # display overlay
-            return (dash.no_update,) * 13 + ({"display": "block"},)
+            return (dash.no_update,) * 14 + ({"display": "block"},)
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
         MAX_DP_CURRENT = NUM_TECS * 5 * 60  # 5 min
         MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
         MAX_DP_POWER = NUM_TECS * 10 * 60  # 10 min
+
+        MAX_DP_OBJECT_TEMP_EXTERNAL = params.num_external_tecs * 10 * 60  # 10 min
 
         # get data
         df_all = get_data_from_store()
@@ -336,7 +349,7 @@ def graphs_tables_callbacks(app):
                     table_columns,
                     sequence_status,
                     app_loading_status,
-                ) + (dash.no_update,) * 10
+                ) + (dash.no_update,) * 11
 
             # Update graphs
 
@@ -348,6 +361,15 @@ def graphs_tables_callbacks(app):
                 tail_exclude_external(df_all, MAX_DP_OBJECT_TEMP),
                 fig_id="graph-object-temperature",
             )
+
+            # update external temperature graph if applicable
+            if params.num_external_tecs > 0:
+                graph_object_temp_external = update_graph_external_temperature(
+                    tail_only_external(df_all, MAX_DP_OBJECT_TEMP_EXTERNAL),
+                    fig_id="graph-object-temperature-external",
+                )
+            else:
+                graph_object_temp_external = dash.no_update
 
             # from the tab graphs, only update the visible ones
 
@@ -425,6 +447,7 @@ def graphs_tables_callbacks(app):
                 sequence_status,
                 app_loading_status,
                 graph_object_temp,
+                graph_object_temp_external,
                 graph_all_current,
                 graph_all_current2,
                 graph_all_voltage,

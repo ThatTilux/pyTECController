@@ -93,6 +93,7 @@ def button_callbacks(app):
             Output("toast-start-backend-error", "is_open"),
             Output("spinner-btn-start-backend", "children"),  # to trigger its spinner
             Output("initial-load-spinner", "style"),  # Added for spinner logic
+            Output("graph-external-temperature-container", "style") 
         ],
         [
             Input("btn-start-backend", "n_clicks"),
@@ -110,6 +111,10 @@ def button_callbacks(app):
         prevent_initial_call=False,  # Allow initial execution
     )
     def combined_callback(n_clicks_backend, n_clicks_dummy, is_loaded, optionals_switches, optionals_switches_labels):
+        # check if at least one external is active
+        has_external = True in optionals_switches
+        external_container_style = {"display": "block"} if has_external else {"display": "none"}
+        
         # Define return values for normal and dummy mode
         return_normal = (
             {"display": "none"},
@@ -119,6 +124,7 @@ def button_callbacks(app):
             no_update,
             no_update,
             {"display": "none"},  # Hide spinner
+            external_container_style
         )
 
         return_dummy = (
@@ -129,6 +135,7 @@ def button_callbacks(app):
             no_update,
             no_update,
             {"display": "none"},  # Hide spinner
+            {"display": "none"} # hardcode that dummy data has no external temperature here
         )
 
         # Check if this is the initial call (e.g., page reload)
@@ -158,6 +165,7 @@ def button_callbacks(app):
                     no_update,
                     no_update,
                     {"display": "none"},
+                    no_update,
                 )  # Hide spinner, show welcome menu
             else:
                 return (
@@ -168,6 +176,7 @@ def button_callbacks(app):
                     no_update,
                     no_update,
                     {"display": "block"},
+                    no_update,
                 )  # Show spinner, hide welcome menu
 
         # Backend Start Button Pressed
@@ -199,6 +208,7 @@ def button_callbacks(app):
             True,  # Show error toast
             no_update,
             no_update,  # Keep spinner state unchanged
+            no_update, 
         )
 
     # callback for when the refresh connection status btn is pressed
