@@ -216,6 +216,20 @@ class TECController(object):
             address=self.address,
             parameter_instance=self.channel,
         )
+        
+    def set_individual_source(self):
+        """
+        Sets the source selection to the corresponding channel.
+        """
+        # 0 is CH1 sensor, 2 is CH2 sensor
+        value = 0 if self.channel == 1 else 2
+        
+        return self.session().set_parameter(
+            parameter_id=6300,
+            value=value,
+            address=self.address,
+            parameter_instance=self.channel,
+        )
 
     def set_temp(self, value):
         """

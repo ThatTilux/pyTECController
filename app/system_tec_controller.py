@@ -124,7 +124,12 @@ class SystemTECController:
         controllers = {}
         for i, port in enumerate(ports):
             for channel in range(1, 3):
-                controllers[f"EXT_{i}_CH_{channel}"] = TECController(channel=channel, port=port)
+                controller = TECController(channel=channel, port=port)
+                
+                # set source selection to correponding sensor (as opposed to CH1)
+                controller.set_individual_source()
+                
+                controllers[f"EXT_{i}_CH_{channel}"] = controller
         return controllers
 
 
