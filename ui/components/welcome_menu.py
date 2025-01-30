@@ -10,12 +10,12 @@ def welcome_menu():
         children=[
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle("Connect TECs"), close_button=False),
+                    dbc.ModalHeader(dbc.ModalTitle("Connect TEC Controllers"), close_button=False),
                     dbc.ModalBody(
                         dbc.Spinner(
                             html.Div(id="connection-status-container"),
                             color="primary",
-                        )
+                        ), class_name="py-1"
                     ),
                     dbc.ModalFooter(
                         dbc.Row(

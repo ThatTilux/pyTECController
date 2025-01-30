@@ -1,6 +1,6 @@
 from datetime import datetime
 from dash import callback_context as ctx
-from dash.dependencies import Output, Input, State
+from dash.dependencies import Output, Input, State, ALL
 from dash import dcc, no_update
 import dash_bootstrap_components as dbc
 import dash
@@ -30,10 +30,56 @@ from ui.data_store import (
 
 from ui.layouts import ACTIVE_MODE
 
+
+# variable to keep track of the last state of optional TEC controller's switches
+_switches_state = []
+
+
 # Helper function to get the file name of a new CSV to be downloaded as a string
 def get_CSV_file_name():
     time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
     return f"TEC_data_{time}.csv"
+
+
+# Helper function to assess the disabled state of the 'start' btn in welcome menu and build the rows
+def helper_build_rows_and_check_disabled(switches, labels):
+    # get state of optional TEC contorller's switches
+    optional_tec_controllers = {}
+    for switch, label in zip(switches, labels):
+        optional_tec_controllers[label] = switch
+
+    connection_status = get_connection_status()
+    if connection_status is None:
+        return dash.no_update
+
+    updated_rows = []
+
+    connection_ready = True
+
+    for label, status in connection_status.items():
+        try:
+            port = PORTS[label]
+        except KeyError:
+            print(f"[WARNING] Port {label} not found in PORTS")
+            continue
+
+        # retain the switch value for optional TEC controllers
+        if label in optional_tec_controllers.keys():
+            switch_value = optional_tec_controllers[label]
+        else:
+            switch_value = True
+
+        updated_rows.append(connection_status_row(label, port, status, switch_value))
+        if not status:
+            # optional TEC controllers that are toggled off do not count as a connection error
+            if "OPTIONAL" in label and (
+                label not in optional_tec_controllers.keys()
+                or optional_tec_controllers[label]
+            ):  # by default, switches are True
+                connection_ready = False
+            elif "OPTIONAL" not in label:
+                connection_ready = False
+    return updated_rows, not connection_ready
 
 
 def button_callbacks(app):
@@ -78,7 +124,7 @@ def button_callbacks(app):
         )
 
         # Check if this is the initial call (e.g., page reload)
-        if not ctx.triggered:  
+        if not ctx.triggered:
             # Restore previous state if backend is already running
             global ACTIVE_MODE
             if ACTIVE_MODE == "Normal":
@@ -96,9 +142,25 @@ def button_callbacks(app):
         # Handle spinner logic on initial load
         if triggered_id == "initial-load":
             if is_loaded:
-                return {"display": "block"}, no_update, no_update, no_update, no_update, no_update, {"display": "none"}  # Hide spinner, show welcome menu
+                return (
+                    {"display": "block"},
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                    {"display": "none"},
+                )  # Hide spinner, show welcome menu
             else:
-                return {"display": "none"}, no_update, no_update, no_update, no_update, no_update, {"display": "block"}  # Show spinner, hide welcome menu
+                return (
+                    {"display": "none"},
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                    {"display": "block"},
+                )  # Show spinner, hide welcome menu
 
         # Backend Start Button Pressed
         elif triggered_id == "btn-start-backend":
@@ -130,10 +192,20 @@ def button_callbacks(app):
             Output("connection-status-container", "children"),
             Output("btn-start-backend", "disabled"),
         ],
-        Input("btn-refresh-tec-connection-status", "n_clicks"),
+        [
+            Input("btn-refresh-tec-connection-status", "n_clicks"),
+        ],
+        [
+            State(
+                {"type": "toggle-tec-controller", "index": ALL}, "value"
+            ),  # all switches for optional TEC controllers
+            State(
+                {"type": "toggle-tec-controller", "index": ALL}, "label_id"
+            ),  # name/label of the TEC controller in PORTS
+        ],
         prevent_initial_call=False,
     )
-    def refresh_connection_status(n_clicks):
+    def refresh_connection_status(n_clicks, switches, labels):
         # check that this callback is not already running to prevent btn spamming
         if get_callback_lock("refresh_connection_status"):
             return dash.no_update
@@ -143,30 +215,31 @@ def button_callbacks(app):
 
         # try-finally block for the rest of the code to make sure that the lock is unset in every case
         try:
-
-            connection_status = get_connection_status()
-            if connection_status is None:
-                return dash.no_update
-
-            updated_rows = []
-
-            connection_ready = True
-
-            for label, status in connection_status.items():
-                try:
-                    port = PORTS[label]
-                except KeyError:
-                    print(f"[WARNING] Port {label} not found in PORTS")
-                    continue
-
-                updated_rows.append(connection_status_row(label, port, status))
-                if not status and "OPTIONAL" not in label:
-                    connection_ready = False
-
-            return updated_rows, not connection_ready
+            return helper_build_rows_and_check_disabled(switches, labels)
         finally:
             # unset callback lock
             set_callback_lock("refresh_connection_status", False)
+
+    # when a switch of an optional TEC controller is toggled
+    @app.callback(
+        Output("btn-start-backend", "disabled", allow_duplicate=True),
+        [
+            Input({"type": "toggle-tec-controller", "index": ALL}, "value"),
+        ],
+        [State({"type": "toggle-tec-controller", "index": ALL}, "label_id")],
+        prevent_initial_call=True,
+    )
+    def toggle_optional_tec_controller(switches, labels):
+        # if the switch values are the same as the old ones, this callback was triggered
+        # by a re-render and not by a switch toggle
+        global _switches_state
+        if _switches_state == switches:
+            raise dash.exceptions.PreventUpdate
+
+        _switches_state = switches
+
+        _, disabled = helper_build_rows_and_check_disabled(switches, labels)
+        return disabled
 
     # when the download data btn is pressed
     @app.callback(

@@ -270,7 +270,7 @@ def check_reconnecting():
 def get_connection_status():
     """
     Retrieves the latest connection status message from the pubsub channel. Will run until a message is received.
-    
+
     Returns:
         A dictionary with the connection status of the TECs, with labels as keys and:
         - True if the connection is online
@@ -292,7 +292,7 @@ def get_connection_status():
     if latest_message is None:
         # No message received, try again
         sleep(0.3)
-        return get_connection_status()    
+        return get_connection_status()
 
     # Extract message data
     data = latest_message["data"].split("$$")
@@ -311,13 +311,17 @@ def get_connection_status():
     if timestamp + 1 < time():
         # try again
         sleep(0.1)
-        return get_connection_status()  
+        return get_connection_status()
 
     # Build connection status dictionary
     connection_status = {conn: True for conn in successful_connections if conn}
     connection_status.update({conn: False for conn in unsuccessful_connections if conn})
 
-    return dict(sorted(connection_status.items()))  # Return sorted dictionary
+    # Sort the dictionary, placing keys containing "OPTIONAL" at the end
+    sorted_keys = sorted(
+        connection_status.keys(), key=lambda x: ("OPTIONAL" in x, x)
+    )
+    return {key: connection_status[key] for key in sorted_keys}
 
 
 def set_callback_lock(id, lock):
