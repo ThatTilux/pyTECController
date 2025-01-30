@@ -5,6 +5,7 @@ Functions to send commands to the TECInterface
 import redis
 
 from redis_keys import REDIS_KEY_START_BACKEND_FEEDBACK, REDIS_KEY_UI_COMMANDS
+import app.param_values as params
 
 r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 
@@ -44,6 +45,9 @@ def start_backend(optional_tec_controllers=None):
     # add external controllers
     if optional_tec_controllers:
         message += f"$${'$'.join(optional_tec_controllers)}"
+        
+        # set the number of external tecs
+        params.num_external_tecs = len(optional_tec_controllers)*2 # each controller has 2 channels
 
     r.publish(REDIS_KEY_UI_COMMANDS, message)
 
