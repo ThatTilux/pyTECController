@@ -10,12 +10,15 @@ def welcome_menu():
         children=[
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle("Connect TEC Controllers"), close_button=False),
+                    dbc.ModalHeader(
+                        dbc.ModalTitle("Connect TEC Controllers"), close_button=False
+                    ),
                     dbc.ModalBody(
                         dbc.Spinner(
                             html.Div(id="connection-status-container"),
                             color="primary",
-                        ), class_name="py-1"
+                        ),
+                        class_name="py-1",
                     ),
                     dbc.ModalFooter(
                         dbc.Row(
@@ -69,26 +72,37 @@ def welcome_menu():
                         )
                     ),
                 ],
-                backdrop=False,
+                backdrop="static",
                 size="lg",
                 is_open=True,
                 centered=True,
                 id="modal-connect-tecs",
             ),
-            dbc.Toast(  # Toast for error on pressing the start btn
-                [
-                    html.P(
-                        "Could not connect to the TECs. Please make sure they are powered on and connected via USB.",
-                        className="mb-0",
-                    )
-                ],
-                id="toast-start-backend-error",
-                header="Error",
-                icon="danger",
-                duration=15000,
-                is_open=False,
-                # position toast on top right
-                style={"position": "fixed", "top": 10, "right": 10, "width": 350},
-            ),
         ]
+    )
+
+
+def welcome_menu_toast():
+    return html.Div(
+        dbc.Toast(  # Toast for error on pressing the start btn
+            [
+                html.P(
+                    "Could not connect to the TECs. Please make sure they are powered on and connected via USB.",
+                    className="mb-0",
+                )
+            ],
+            id="toast-start-backend-error",
+            header="Error",
+            icon="danger",
+            duration=15000,
+            is_open=False,
+            # position toast on top right
+            style={
+                "position": "fixed",
+                "top": 10,
+                "right": 10,
+                "width": 350,
+                "zIndex": 9999,  # in foreground
+            },
+        ),
     )

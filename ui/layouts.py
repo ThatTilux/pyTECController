@@ -2,7 +2,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 
-from ui.components.welcome_menu import welcome_menu
+from ui.components.welcome_menu import welcome_menu, welcome_menu_toast
 from ui.components.control_form import control_form
 from ui.components.data_table import data_table
 from ui.components.download_accordion import download_accordion
@@ -20,7 +20,7 @@ PRECONFIGURED_SEQUENCE_DATA = {
     "3": [30, 30, 1, 1],
 }
 
-# holding info on what mode is currently active ("None" -> show welcome, "Dummy" -> show dummy mode, "Normal" -> show normal mode) 
+# holding info on what mode is currently active ("None" -> show welcome, "Dummy" -> show dummy mode, "Normal" -> show normal mode)
 ACTIVE_MODE = "None"
 
 
@@ -30,6 +30,7 @@ def layout(app):
             tec_error_page(),
             dbc.Container(
                 [
+                    welcome_menu_toast(),
                     html.H1("TEC Central Command Control"),
                     # will be displayed in case of dummy-mode
                     html.Div(
@@ -44,11 +45,11 @@ def layout(app):
                     initial_load_spinner(),
                     # welcome menu
                     html.Div(
-                      id="welcome-menu",
-                      style={"display": "none"}, # hide initially  
-                      children=[
-                          welcome_menu(),
-                      ]
+                        id="welcome-menu",
+                        style={"display": "none"},  # hide initially
+                        children=[
+                            welcome_menu(),
+                        ],
                     ),
                     # app main content
                     html.Div(
@@ -93,12 +94,12 @@ def layout(app):
                     ),  # keys are strings since dash store will convert them to str anywys
                     # store for holding info on whether or not a sequence is running
                     dcc.Store(
-                        id="is-sequence-running",
-                        data=False,
-                        storage_type="session"
+                        id="is-sequence-running", data=False, storage_type="session"
                     ),
                     # hidden div to track whether the app is ready to be displayed
-                    html.Div(id="initial-load", style={"display": "none"}, children="Loaded."),
+                    html.Div(
+                        id="initial-load", style={"display": "none"}, children="Loaded."
+                    ),
                 ],
                 class_name="pt-2",
             ),
