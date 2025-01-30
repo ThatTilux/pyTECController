@@ -3,6 +3,7 @@ import dash
 import pandas as pd
 import time
 
+import app.param_values as params
 from app.param_values import NUM_TECS
 from ui.command_sender import disable_all_plates, enable_all_plates, set_temperature
 from ui.components.graphs import (
@@ -10,10 +11,16 @@ from ui.components.graphs import (
     update_graph_all_current,
     update_graph_all_temperature,
     update_graph_all_voltage,
+    update_graph_external_temperature,
     update_graph_object_temperature,
     update_graph_sum_power,
 )
-from ui.data_store import get_callback_lock, check_reconnecting, get_data_from_store, set_callback_lock
+from ui.data_store import (
+    get_callback_lock,
+    check_reconnecting,
+    get_data_from_store,
+    set_callback_lock,
+)
 from ui.sequence_manager import SequenceManager
 
 
@@ -121,13 +128,12 @@ def _convert_timestamps(df):
     """
     # Convert timestamp to datetime
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
-    
+
     # Get local time offset in seconds
     offset_seconds = time.localtime().tm_gmtoff
     df["timestamp"] = df["timestamp"] + pd.Timedelta(seconds=offset_seconds)
 
     return df
-
 
 
 def update_measurement_table(_df):
@@ -189,14 +195,56 @@ def update_measurement_table(_df):
         + "_"
         + df.index.get_level_values("TEC").astype(str)
     )
-    
+
+    # for the externals, specify the channel
+    df.loc[df["Label"].str.contains("EXTERNAL"), "Label"] = (
+        # turn the trailing number n into f"{n//2+1} ({'CH1' if n%2==0 else 'CH2'})"
+        df.loc[df["Label"].str.contains("EXTERNAL"), "Label"].str.replace(
+            r"(\d+)$",
+            lambda x: f"{int(x.group(1))//2} ({'CH1' if int(x.group(1))%2==0 else 'CH2'})",
+            regex=True,
+        )
+    )
+
+    # for external tecs, wipe these cols to avoid confusion
+    cols_to_wipe = [
+        "loop status",
+        "target object temperature",
+        "output current",
+        "output voltage",
+        "output power",
+    ]
+    for col in cols_to_wipe:
+        df.loc[df["Label"].str.contains("EXTERNAL"), col] = "-"
+
     # create column odering so label is first
     cols = ["Label"] + [col for col in df.columns if col != "Label"]
+
+    # push all rows containing "EXTENRAL" to the end
+    df = df.sort_values(by="Label", key=lambda col: col.str.contains("EXTERNAL"))
 
     # Preparing columns for the DataTable with updated labels
     columns = [{"name": column_labels.get(i, i), "id": i} for i in cols]
     data = df.to_dict("records")
     return data, columns
+
+
+def tail_exclude_external(df, num_rows):
+    """
+    Returns the last num_rows rows of the DataFrame excluding the external TECs.
+    """
+    return df.loc[~df.index.get_level_values("Plate").str.contains("external")].tail(
+        num_rows
+    )
+
+
+def tail_only_external(df, num_rows):
+    """
+    Returns the last num_rows rows of the DataFrame only including the external TECs.
+    """
+    return df.loc[df.index.get_level_values("Plate").str.contains("external")].tail(
+        num_rows
+    )
 
 
 def graphs_tables_callbacks(app):
@@ -207,6 +255,7 @@ def graphs_tables_callbacks(app):
             Output("sequence-status-container", "children"),
             Output("initial-load", "children"),
             Output("graph-object-temperature", "figure"),
+            Output("graph-object-temperature-external", "figure"),
             Output("graph-all-current", "figure"),
             Output("graph-all-current-2", "figure"),
             Output("graph-all-voltage", "figure"),
@@ -241,7 +290,7 @@ def graphs_tables_callbacks(app):
         reconnecting_code = check_reconnecting()
         if reconnecting_code == 1:
             # display overlay
-            return (dash.no_update,) * 13 + ({"display": "block"},)
+            return (dash.no_update,) * 14 + ({"display": "block"},)
 
         # only show this many datapoints:
         MAX_DP_OBJECT_TEMP = NUM_TECS * 10 * 60  # 10 min
@@ -249,12 +298,14 @@ def graphs_tables_callbacks(app):
         MAX_DP_VOLTAGE = NUM_TECS * 5 * 60  # 5 min
         MAX_DP_POWER = NUM_TECS * 10 * 60  # 10 min
 
+        MAX_DP_OBJECT_TEMP_EXTERNAL = params.num_external_tecs * 10 * 60  # 10 min
+
         # get data
         df_all = get_data_from_store()
 
         if df_all is None:
             return dash.no_update
-        
+
         # check that this callback is not already running
         if get_callback_lock("update_components_from_store"):
             return dash.no_update
@@ -278,7 +329,7 @@ def graphs_tables_callbacks(app):
 
             # update table
             # get the most recent measurement
-            df_recent = df_all.tail(NUM_TECS)
+            df_recent = df_all.tail(NUM_TECS + params.num_external_tecs)
             table_data, table_columns = update_measurement_table(df_recent)
 
             # get the current avergae temperatures
@@ -298,7 +349,7 @@ def graphs_tables_callbacks(app):
                     table_columns,
                     sequence_status,
                     app_loading_status,
-                ) + (dash.no_update,) * 10
+                ) + (dash.no_update,) * 11
 
             # Update graphs
 
@@ -307,36 +358,50 @@ def graphs_tables_callbacks(app):
 
             # update main temperature graph
             graph_object_temp = update_graph_object_temperature(
-                df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-object-temperature"
+                tail_exclude_external(df_all, MAX_DP_OBJECT_TEMP),
+                fig_id="graph-object-temperature",
             )
+
+            # update external temperature graph if applicable
+            if params.num_external_tecs > 0:
+                graph_object_temp_external = update_graph_external_temperature(
+                    tail_only_external(df_all, MAX_DP_OBJECT_TEMP_EXTERNAL),
+                    fig_id="graph-object-temperature-external",
+                )
+            else:
+                graph_object_temp_external = dash.no_update
 
             # from the tab graphs, only update the visible ones
 
             # tab-1
             graph_all_current = (
                 update_graph_all_current(
-                    df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current"
+                    tail_exclude_external(df_all, MAX_DP_CURRENT),
+                    fig_id="graph-all-current",
                 )
                 if active_tab == "tab-current"
                 else dash.no_update
             )
             graph_all_voltage = (
                 update_graph_all_voltage(
-                    df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage"
+                    tail_exclude_external(df_all, MAX_DP_VOLTAGE),
+                    fig_id="graph-all-voltage",
                 )
                 if active_tab == "tab-voltage"
                 else dash.no_update
             )
             graph_all_temperature = (
                 update_graph_all_temperature(
-                    df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature"
+                    tail_exclude_external(df_all, MAX_DP_OBJECT_TEMP),
+                    fig_id="graph-all-temperature",
                 )
                 if active_tab == "tab-temperature"
                 else dash.no_update
             )
             graph_sum_power = (
                 update_graph_sum_power(
-                    df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power"
+                    tail_exclude_external(df_all, MAX_DP_POWER),
+                    fig_id="graph-sum-power",
                 )
                 if active_tab == "tab-power"
                 else dash.no_update
@@ -345,28 +410,32 @@ def graphs_tables_callbacks(app):
             # tab-2
             graph_all_current2 = (
                 update_graph_all_current(
-                    df_all.tail(MAX_DP_CURRENT), fig_id="graph-all-current-2"
+                    tail_exclude_external(df_all, MAX_DP_CURRENT),
+                    fig_id="graph-all-current-2",
                 )
                 if active_tab_2 == "tab-current"
                 else dash.no_update
             )
             graph_all_voltage2 = (
                 update_graph_all_voltage(
-                    df_all.tail(MAX_DP_VOLTAGE), fig_id="graph-all-voltage-2"
+                    tail_exclude_external(df_all, MAX_DP_VOLTAGE),
+                    fig_id="graph-all-voltage-2",
                 )
                 if active_tab_2 == "tab-voltage"
                 else dash.no_update
             )
             graph_all_temperature2 = (
                 update_graph_all_temperature(
-                    df_all.tail(MAX_DP_OBJECT_TEMP), fig_id="graph-all-temperature-2"
+                    tail_exclude_external(df_all, MAX_DP_OBJECT_TEMP),
+                    fig_id="graph-all-temperature-2",
                 )
                 if active_tab_2 == "tab-temperature"
                 else dash.no_update
             )
             graph_sum_power2 = (
                 update_graph_sum_power(
-                    df_all.tail(MAX_DP_POWER), fig_id="graph-sum-power-2"
+                    tail_exclude_external(df_all, MAX_DP_POWER),
+                    fig_id="graph-sum-power-2",
                 )
                 if active_tab_2 == "tab-power"
                 else dash.no_update
@@ -378,6 +447,7 @@ def graphs_tables_callbacks(app):
                 sequence_status,
                 app_loading_status,
                 graph_object_temp,
+                graph_object_temp_external,
                 graph_all_current,
                 graph_all_current2,
                 graph_all_voltage,
@@ -386,7 +456,7 @@ def graphs_tables_callbacks(app):
                 graph_all_temperature2,
                 graph_sum_power,
                 graph_sum_power2,
-                {"display": "none"}
+                {"display": "none"},
             )
         finally:
             set_callback_lock("update_components_from_store", False)

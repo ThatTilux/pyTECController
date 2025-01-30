@@ -3,16 +3,22 @@ from app.serial_ports import PORTS
 import pandas as pd
 from datetime import datetime
 
+from app.tec_controller import TECController
+
 
 class SystemTECController:
     """
     This class controls the entire contraption, i.e. both plates.
     """
 
-    def __init__(self, ports_top=None, ports_bottom=None):
+    def __init__(self, ports_top=None, ports_bottom=None, ports_external=None):
         top = PlateTECController(label="top", ports=ports_top)
         bottom = PlateTECController(label="bottom", ports=ports_bottom)
         self.controllers = {"top": top, "bottom": bottom}
+        
+        # set up external sensors (read only)
+        if ports_external:
+            self.external_tecs = self._connect_external_tecs(ports_external)
 
     def set_temp(self, plate, temp):
         """Sets the temperature for a plate.
@@ -72,9 +78,9 @@ class SystemTECController:
         """
         Returns a dataframe with all the data for all TECs.
         """
+        # Get data of TECs
         data = {}
-        for label in self.controllers:
-            controller = self.controllers[label]
+        for label, controller in self.controllers.items():
             data[label] = controller.get_data()
             
         frames = []
@@ -84,6 +90,18 @@ class SystemTECController:
                 df['TEC'] = tec_id
                 df['Plate'] = plate
                 frames.append(df)
+                
+        # add data of external TECs
+        if hasattr(self, "external_tecs"):
+            data_ext = {}
+            for i, (label, tec) in enumerate(self.external_tecs.items()):
+                data_ext[i] = tec.get_data()
+            
+            for tec_id, tec_data in data_ext.items():
+                df = pd.DataFrame([tec_data])
+                df['TEC'] = tec_id
+                df['Plate'] = "external"
+                frames.append(df)    
 
         # Concatenate all small DataFrames and set multi-index
         df = pd.concat(frames).set_index(['Plate', 'TEC']).sort_index()
@@ -101,6 +119,18 @@ class SystemTECController:
 
     def get_temps_avg(self, plate):
         assert plate in ["top", "bottom"]
+        
+    def _connect_external_tecs(self, ports):
+        controllers = {}
+        for i, port in enumerate(ports):
+            for channel in range(1, 3):
+                controller = TECController(channel=channel, port=port)
+                
+                # set source selection to correponding sensor (as opposed to CH1)
+                controller.set_individual_source()
+                
+                controllers[f"EXT_{i}_CH_{channel}"] = controller
+        return controllers
 
 
 # example code

@@ -27,9 +27,7 @@ class PlateTECController:
             # Use both channels
             controllers[id_counter] = TECController(channel=1, port=port)
             # set parallel mode for the first channel
-            controllers[id_counter].set_individual_mode()
-            # set delay till restart for first channel to 5s
-            controllers[id_counter].set_delay_till_restart(5.0)
+            controllers[id_counter].set_parallel_mode()
             id_counter += 1
             controllers[id_counter] = TECController(channel=2, port=port)
             id_counter += 1

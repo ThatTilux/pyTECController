@@ -6,6 +6,9 @@ Do not touch these unless you are aware of the consequences.
 # Number of Thermoelectric Coolers (TECs)
 NUM_TECS = 8
 
+# Number of external TECs
+num_external_tecs = 0 # adjusted at runtime based on UI selection
+
 # syntax
 # { display_name: [parameter_id, unit, limit]}
 PARAM_VALUES = {
@@ -31,5 +34,5 @@ PARAM_VALUES = {
 TEMP_INPUT_LIMITS = {  # limits for the temperature input fields in the UI in °C
     "max": (PARAM_VALUES["upper error threshold"][2] - 7),
     "min": (PARAM_VALUES["lower error threshold"][2] + 7),
-    "step": 0.01,  # allow 0.01 precision, not more
+    "step": 0.1,  # allow 0.1 precision, not more
 }

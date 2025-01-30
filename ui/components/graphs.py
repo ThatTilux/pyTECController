@@ -84,6 +84,20 @@ def graphs(app):
                 ),
                 className="mt-3",
             ),
+            html.Div(
+                dbc.Card(
+                    dbc.CardBody(
+                        html.Div(
+                            children=graph_with_config_and_controls(
+                                app, "graph-object-temperature-external"
+                            )
+                        )
+                    ),
+                    class_name="mt-3",
+                ),
+                id="graph-external-temperature-container",
+                style={"display": "none"}, # hide initially, display if external TECs are connected
+            ),
         ]
     )
 
@@ -148,7 +162,7 @@ def graph_with_config_and_controls(app, id):
             Output(f"{id}-yaxis-btn-toggle", "children"),
         ],
         Input(f"{id}-yaxis-btn-toggle", "n_clicks"),
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
     def toggle_yaxis_container(n_clicks):
         display = "none"
@@ -343,13 +357,9 @@ def update_graph_object_temperature(df, fig_id):
             showlegend=True,
         )
     )
-    
+
     # Reorder legend entries dynamically
-    fig.update_layout(
-        legend=dict(
-            traceorder="reversed" 
-        )
-    )
+    fig.update_layout(legend=dict(traceorder="reversed"))
 
     # force the plot to always only have 2 ticks
     _force_two_ticks(fig, avg_temps)
@@ -411,13 +421,15 @@ def update_graph_max_current(df, fig_id):
     return update_graph_max_abs_generic(df, "output current", "Current", "A", fig_id)
 
 
-def update_graph_all_generic(_df, parameter, label, unit, fig_id):
+def update_graph_all_generic(_df, parameter, label, unit, fig_id, is_external=False):
     """
     Generic function for updating a graph displaying all instances of some parameter.
 
     parameter: name of the parameter, e.g. "output current"
     label: label to display, e.g. "Current"
     unit: label of unit, e.g. "A"
+    fig_id: id of the figure
+    is_external: whether the data is from external TECs
     """
 
     # reset multiindex
@@ -425,6 +437,16 @@ def update_graph_all_generic(_df, parameter, label, unit, fig_id):
 
     # Create a 'Label' column
     df["Label"] = df["Plate"].str.upper() + "_" + df["TEC"].astype(str)
+
+    # for the externals, specify the channel
+    df.loc[df["Label"].str.contains("EXTERNAL"), "Label"] = (
+        # turn the trailing number n into f"{n//2+1} ({'CH1' if n%2==0 else 'CH2'})"
+        df.loc[df["Label"].str.contains("EXTERNAL"), "Label"].str.replace(
+            r"(\d+)$",
+            lambda x: f"{int(x.group(1))//2} ({'CH1' if int(x.group(1))%2==0 else 'CH2'})",
+            regex=True,
+        )
+    )
 
     # Keep only necessary columns
     df = df[["Label", parameter, "timestamp"]]
@@ -454,7 +476,7 @@ def update_graph_all_generic(_df, parameter, label, unit, fig_id):
             "timestamp": "Time (hh:mm:ss)",
             parameter: f"{label} ({unit})",
         },
-        title=f"{label} for all TECs",
+        title=f"{label} for all {"external sensors" if is_external else "TECs"}",
         markers=True,
     )
 
@@ -478,6 +500,12 @@ def update_graph_all_voltage(df, fig_id):
 def update_graph_all_temperature(df, fig_id):
     return update_graph_all_generic(
         df, "object temperature", "Temperature", "°C", fig_id
+    )
+
+
+def update_graph_external_temperature(df, fig_id):
+    return update_graph_all_generic(
+        df, "object temperature", "Temperature", "°C", fig_id, is_external=True
     )
 
 

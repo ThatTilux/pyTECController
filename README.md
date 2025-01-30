@@ -39,6 +39,7 @@ Determine the serial ports assigned to each of the four PID control boards. This
 
 Create a file named `serial_ports.py` file in the `app` directory. Fill in the code below, replacing `COMX` with the respective serial port.
 Assign the serial ports for the top control boards to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
+If you have an additional control board for external sensors, set its serial port under "OPTIONAL_EXTERNAL". If not, remove the line or leave it blank. External boards are those that only read temperatures and do not control TECs.
 ```
 # These are the serialport allocations for the 4 boards controlling the TECs when connected via USB.
 PORTS = {
@@ -46,6 +47,7 @@ PORTS = {
     "TOP_2": "COMX",
     "BOTTOM_1": "COMX",
     "BOTTOM_2": "COMX",
+    "OPTIONAL_EXTERNAL": "COMX",
 }
 ```
 
