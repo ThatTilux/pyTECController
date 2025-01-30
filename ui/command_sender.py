@@ -25,24 +25,36 @@ def enable_all_plates():
     r.publish(REDIS_KEY_UI_COMMANDS, "ENABLE_ALL")
 
 
-def start_backend():
+def start_backend(optional_tec_controllers=None):
     """
     Start the backend and return True if successful, False otherwise.
-    
+
+    Args
+    ----
+    optional_tec_controllers : list of str
+        List of external/optional TEC controllers to connect to.
+
     Returns
     -------
     bool
         True if the backend started successfully, False otherwise.
     """
-    r.publish(REDIS_KEY_UI_COMMANDS, "GO")
+    message = "GO"
+
+    # add external controllers
+    if optional_tec_controllers:
+        message += f"$${'$'.join(optional_tec_controllers)}"
+
+    r.publish(REDIS_KEY_UI_COMMANDS, message)
 
     # wait for the backend to start
     return _wait_for_backend_response()
-            
+
+
 def start_backend_dummy():
     """
     Start the backend in dummy mode and return True if successful, False otherwise.
-    
+
     Returns
     -------
     bool
@@ -53,10 +65,11 @@ def start_backend_dummy():
     # wait for the backend to start
     return _wait_for_backend_response()
 
+
 def _wait_for_backend_response():
     """
     Wait for the backend to start and return True if successful, False otherwise.
-    
+
     Returns
     -------
     bool
@@ -64,7 +77,7 @@ def _wait_for_backend_response():
     """
     for message in pubsub_backend_start_feedback.listen():
         if message["type"] == "message":
-            data = message["data"].split("$$") 
+            data = message["data"].split("$$")
             if data[0] == "SUCCESS":
                 return True
             elif data[0] == "ERROR":

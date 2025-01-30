@@ -40,10 +40,23 @@ class TECInterface:
     # Use existing data if last update was within this duration (in seconds)
     _UPDATE_THRESHOLD = 0.3
 
-    def __init__(self):
+    def __init__(self, optional_tecs=None):
+        """
+        Initializes the TECInterface.
+        
+        Args:
+            optional_tecs (list of str): List of optional TEC controllers's labels to connect to.
+        
+        Returns:
+            TECInterface object
+        """
+        # convert optional labels to ports
+        external_ports = [PORTS[label] for label in optional_tecs] if optional_tecs else None
+        
         self.system_controller = SystemTECController(
             ports_top=[PORTS["TOP_1"], PORTS["TOP_2"]],
             ports_bottom=[PORTS["BOTTOM_1"], PORTS["BOTTOM_2"]],
+            ports_external=external_ports,
         )
         # all measurements from all TECs
         self._data = pd.DataFrame()
@@ -256,14 +269,18 @@ def wait_for_go(r, pubsub_ui_commands):
         # Listen for UI commands
         message = pubsub_ui_commands.get_message()
         while message and message["type"] == "message":
-            command = message["data"]
+            data = message["data"].split("$$")
+            command = data[0]
             # Check which command was sent
             try:
                 interface = None
                 match command:
                     case "GO":
+                        # get optional tecs to connected to
+                        optional_tecs = data[1].split("$") if len(data) > 1 else None
                         print("UI signaled to start data acquisition.")
-                        interface = TECInterface()
+                        print(f"Optional TECs: {optional_tecs}")
+                        interface = TECInterface(optional_tecs)
                     case "GO_DUMMY":
                         print("UI signaled to start DUMMY data acquisition.")
                         interface = DummyInterface("app/dummy_data/dummy.csv")

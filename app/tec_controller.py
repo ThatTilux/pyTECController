@@ -130,6 +130,10 @@ class TECController(object):
                 logging.error("ERROR in setting parameter limits. Aborting.")
                 self.session().stop()
                 self._session = None
+                
+        # if this is channel 1, set the delay till restart
+        if self.channel == 1:
+            self.set_delay_till_restart(5.0) # 5s
 
     def set_static_mode(self):
         """

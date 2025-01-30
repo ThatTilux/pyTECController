@@ -99,9 +99,17 @@ def button_callbacks(app):
             Input("btn-start-backend-dummy", "n_clicks"),
             Input("initial-load", "children"),
         ],
+        [
+            State(
+                {"type": "toggle-tec-controller", "index": ALL}, "value"
+            ),  # all switches for optional TEC controllers
+            State(
+                {"type": "toggle-tec-controller", "index": ALL}, "label_id"
+            ),  # name/label of the TEC controller in PORTS
+        ],
         prevent_initial_call=False,  # Allow initial execution
     )
-    def combined_callback(n_clicks_backend, n_clicks_dummy, is_loaded):
+    def combined_callback(n_clicks_backend, n_clicks_dummy, is_loaded, optionals_switches, optionals_switches_labels):
         # Define return values for normal and dummy mode
         return_normal = (
             {"display": "none"},
@@ -164,7 +172,14 @@ def button_callbacks(app):
 
         # Backend Start Button Pressed
         elif triggered_id == "btn-start-backend":
-            success = start_backend()
+            # get the list of optional TEC controllers to connect to
+            optional_tec_controllers = []
+            for switch, label in zip(optionals_switches, optionals_switches_labels):
+                if switch:
+                    optional_tec_controllers.append(label)
+            
+            success = start_backend(optional_tec_controllers)
+            
             if success:
                 ACTIVE_MODE = "Normal"
                 return return_normal
