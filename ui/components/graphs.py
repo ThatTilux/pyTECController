@@ -1,9 +1,11 @@
+import json
 import dash_bootstrap_components as dbc
-from dash import html, dcc
-from dash.dependencies import Output, Input
+from dash import html, dcc, no_update
+from dash.dependencies import Output, Input, State
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
+import app.param_values as params
 
 
 # remove these buttons from all graphs
@@ -21,7 +23,7 @@ def graphs(app):
                 dbc.CardBody(
                     html.Div(
                         children=graph_with_config_and_controls(
-                            app, "graph-object-temperature"
+                            app, "graph-object-temperature", True
                         )
                     )
                 ),
@@ -96,31 +98,37 @@ def graphs(app):
                     class_name="mt-3",
                 ),
                 id="graph-external-temperature-container",
-                style={"display": "none"}, # hide initially, display if external TECs are connected
+                style={
+                    "display": "none"
+                },  # hide initially, display if external TECs are connected
             ),
         ]
     )
 
 
-def graph_with_config_and_controls(app, id):
+def graph_with_config_and_controls(app, id, controls_external=False):
     """
-    Creates a graph with a predefined configuration
+    Creates a graph with a predefined configuration and controls for the y-axis range.
+
+    id: id of the graph
+    controls_external: whether the controls are for external TECs
     """
     graph = dcc.Graph(
         id=id,
         config={"modeBarButtonsToRemove": GRAPH_BUTTONS_TO_REMOVE},
     )
 
-    controls = html.Div(
+    yaxis_controls = html.Div(
         children=[
             dbc.Button(
                 "Show Y-Axis Controls",
                 id=f"{id}-yaxis-btn-toggle",
-                class_name="ms-5 mb-1",
+                class_name="mb-1",
             ),
             html.Div(
                 id=f"{id}-yaxis-controls-container",
                 style={"display": "none"},
+                className="px-2",
                 children=[
                     dbc.Label("Y-Axis Range:"),
                     dbc.Checklist(
@@ -150,10 +158,61 @@ def graph_with_config_and_controls(app, id):
                         width=4,
                     ),
                 ],
-                className="ms-5",
             ),
-        ]
+        ],
+        className="ms-5",
     )
+
+    if controls_external:
+
+        external_controls = html.Div(
+            children=[
+                dbc.Button(
+                    "Show External Probe Controls",
+                    id=f"{id}-external-btn-toggle",
+                    class_name="mb-1",
+                ),
+                html.Div(
+                    id=f"{id}-external-controls-checklist-container",
+                    style={"display": "none"},
+                    children=[
+                        dbc.Label("External probes in graph:"),
+                        dbc.Checklist(
+                            options={},  # filled via callback
+                            id=f"{id}-external-probes",
+                            class_name="ml-2",
+                            switch=True,
+                            value=[],
+                        ),
+                    ],
+                    className="px-2",
+                ),
+            ],
+            className="me-5",
+            id=f"{id}-external-controls-container",
+        )
+
+        # register callbacks
+        @app.callback(
+            Output(f"{id}-external-controls-checklist-container", "style"),
+            Output(f"{id}-external-btn-toggle", "children"),
+            Input(f"{id}-external-btn-toggle", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def toggle_external_container(n_clicks):
+            display = "none"
+            btn_label = "Show External Probe Controls"
+            if n_clicks is not None and n_clicks % 2 == 1:
+                display = "block"
+                btn_label = "Hide External Probe Controls"
+            return {"display": display}, btn_label
+
+        controls = html.Div(
+            children=[yaxis_controls, external_controls],
+            style={"display": "flex", "justify-content": "space-between"},
+        )
+    else:
+        controls = yaxis_controls
 
     # register yaxis callbacks
     @app.callback(
@@ -286,7 +345,7 @@ def set_yaxis(fig_id, fig):
         pass
 
 
-def update_graph_object_temperature(df, fig_id):
+def update_graph_object_temperature(df, fig_id, df_external=None):
 
     # Group by Plate and Timestamp, then calculate mean
     avg_temps = (
@@ -306,7 +365,12 @@ def update_graph_object_temperature(df, fig_id):
     format_timestamps(target_temps)
 
     # color map for all lines
-    color_map = {"top": "red", "bottom": "blue"}
+    color_map = {
+        "top": "red",
+        "bottom": "blue",
+        "EXTERNAL_0 (CH1)": "hsl(296, 100%, 80%)",
+        "EXTERNAL_0 (CH2)": "hsl(44, 94%, 63%)",
+    }
 
     # labels in the legend
     label_map = {"top": "Top", "bottom": "Bottom"}
@@ -326,11 +390,42 @@ def update_graph_object_temperature(df, fig_id):
         color_discrete_map=color_map,
     )
 
+    # add external TECs if available
+    if df_external is not None:
+        # reset multiindex
+        df_ext = df_external.reset_index()
+        # format timestamps
+        format_timestamps(df_ext)
+
+        # add one trace per unique TEC
+        unique_tecs = sorted(df_ext["TEC"].unique())
+        for i, tec_id in enumerate(unique_tecs):
+            subset = df_ext[df_ext["TEC"] == tec_id]
+            label = params.get_external_tec_label_from_id(tec_id)
+
+            fig.add_trace(
+                go.Scatter(
+                    x=subset["timestamp"],
+                    y=subset["object temperature"],
+                    mode="lines+markers",
+                    name=label,
+                    line=dict(
+                        color=(
+                            color_map[label]
+                            if label in color_map
+                            else f"hsl({i*360//len(unique_tecs)}, 50%, 50%)"
+                        )
+                    ),
+                )
+            )
+
     # set yaxis
     set_yaxis(fig_id=fig_id, fig=fig)
 
     # add custom legend title
-    fig.for_each_trace(lambda trace: trace.update(name=label_map[trace.name]))
+    fig.for_each_trace(
+        lambda trace: trace.update(name=label_map.get(trace.name, trace.name))
+    )
 
     # Add lines for target object temperatures
     for plate in target_temps["Plate"].unique():
