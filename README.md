@@ -41,7 +41,7 @@ Create a file named `serial_ports.py` file in the `app` directory. Fill in the c
 Assign the serial ports for the top control boards to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
 If you have an additional control board for external sensors, set its serial port under "OPTIONAL_EXTERNAL". If not, remove the line or leave it blank. External boards are those that only read temperatures and do not control TECs.
 ```
-# These are the serialport allocations for the 4 boards controlling the TECs when connected via USB.
+# These are the serialport allocations for the 4 boards controlling the TECs (and externals) when connected via USB.
 PORTS = {
     "TOP_1": "COMX",
     "TOP_2": "COMX",
@@ -122,8 +122,7 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    ```
    docker start tec-data-redis
    ```
-2. Connect the TEC control boards via USB. If none are connected, the software will run with some pre-recorded data.
-3. Start this software by navigating to the root directory and executing the start file:
+2. Start this software by navigating to the root directory and executing the start file:
    ```
    .\start.bat
    ```
