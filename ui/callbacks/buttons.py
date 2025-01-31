@@ -4,6 +4,7 @@ from dash.dependencies import Output, Input, State, ALL
 from dash import dcc, no_update
 import dash_bootstrap_components as dbc
 import dash
+import app.param_values as params
 
 from app.serial_ports import PORTS
 from ui.callbacks.graphs_tables import (
@@ -83,7 +84,7 @@ def helper_build_rows_and_check_disabled(switches, labels):
 
 
 def button_callbacks(app):
-    # combined callback for when the start backend btn is pressed or the page is loaded for the first time
+    # combined callback for when the start backend btn is pressed or the page is loaded for the first time (spinner)
     @app.callback(
         [
             Output("welcome-menu", "style"),
@@ -93,7 +94,9 @@ def button_callbacks(app):
             Output("toast-start-backend-error", "is_open"),
             Output("spinner-btn-start-backend", "children"),  # to trigger its spinner
             Output("initial-load-spinner", "style"),  # Added for spinner logic
-            Output("graph-external-temperature-container", "style") 
+            Output("graph-external-temperature-container", "style") ,
+            Output("graph-object-temperature-external-controls-container", "style"),
+            Output("graph-object-temperature-external-probes", "options"),
         ],
         [
             Input("btn-start-backend", "n_clicks"),
@@ -124,7 +127,8 @@ def button_callbacks(app):
             no_update,
             no_update,
             {"display": "none"},  # Hide spinner
-            external_container_style
+            external_container_style,
+            # graph-object-temperature-external-controls-container style handled below
         )
 
         return_dummy = (
@@ -135,7 +139,9 @@ def button_callbacks(app):
             no_update,
             no_update,
             {"display": "none"},  # Hide spinner
-            {"display": "none"} # hardcode that dummy data has no external temperature here
+            {"display": "none"}, # hardcoded that dummy data has no external temperature here
+            {"display": "none"}, # hardcoded that dummy data has no external temperature here
+            {"display": "none"}, # hardcoded that dummy data has no external temperature here
         )
 
         # Check if this is the initial call (e.g., page reload)
@@ -166,6 +172,8 @@ def button_callbacks(app):
                     no_update,
                     {"display": "none"},
                     no_update,
+                    no_update,
+                    no_update,
                 )  # Hide spinner, show welcome menu
             else:
                 return (
@@ -177,6 +185,8 @@ def button_callbacks(app):
                     no_update,
                     {"display": "block"},
                     no_update,
+                    no_update,
+                    no_update,
                 )  # Show spinner, hide welcome menu
 
         # Backend Start Button Pressed
@@ -186,12 +196,21 @@ def button_callbacks(app):
             for switch, label in zip(optionals_switches, optionals_switches_labels):
                 if switch:
                     optional_tec_controllers.append(label)
+                    
+            if len(optional_tec_controllers) > 0:
+                external_controls_style = {"display": "block"}
+            else:
+                external_controls_style = {"display": "none"}
             
             success = start_backend(optional_tec_controllers)
             
+            # number of optional TECs was set in start_backend, fill the options for checklist now
+            optionals_labels = params.get_external_tec_labels()
+            external_probe_options = [{"label": label, "value": label} for label in optionals_labels]
+            
             if success:
                 ACTIVE_MODE = "Normal"
-                return return_normal
+                return return_normal + (external_controls_style,) + (external_probe_options,)
 
         elif triggered_id == "btn-start-backend-dummy":
             success = start_backend_dummy()
@@ -208,6 +227,8 @@ def button_callbacks(app):
             True,  # Show error toast
             no_update,
             no_update,  # Keep spinner state unchanged
+            no_update, 
+            no_update, 
             no_update, 
         )
 

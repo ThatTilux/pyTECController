@@ -198,7 +198,7 @@ def update_measurement_table(_df):
 
     # for the externals, specify the channel
     df.loc[df["Label"].str.contains("EXTERNAL"), "Label"] = (
-        # turn the trailing number n into f"{n//2+1} ({'CH1' if n%2==0 else 'CH2'})"
+        # turn the trailing number n into f"{n//2} ({'CH1' if n%2==0 else 'CH2'})"
         df.loc[df["Label"].str.contains("EXTERNAL"), "Label"].str.replace(
             r"(\d+)$",
             lambda x: f"{int(x.group(1))//2} ({'CH1' if int(x.group(1))%2==0 else 'CH2'})",
@@ -245,6 +245,38 @@ def tail_only_external(df, num_rows):
     return df.loc[df.index.get_level_values("Plate").str.contains("external")].tail(
         num_rows
     )
+    
+def tail_and_external(df, num_rows, external_labels):
+    """
+    Returns the last num_rows rows of the DataFrame and some specified external TECs in two dataframes.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame to slice
+        num_rows (int): The number of rows to return
+        external_labels (list): List of external TEC labels to include (format is EXTERNAL_{n//2} ({'CH1' if n%2==0 else 'CH2'}))
+    """
+    if not external_labels:
+        return tail_exclude_external(df, num_rows), None
+    
+    # convert labels to ids
+    external_ids = [params.get_external_id_from_label(label) for label in external_labels]
+    
+    # get the rows that contain the external TECs
+    external_rows = df.loc[df.index.get_level_values("Plate").str.contains("external")]
+    
+    # filter the rows
+    external_rows = external_rows.loc[external_rows.index.get_level_values("TEC").isin(external_ids)]
+    
+    # get the rows that do not contain the external TECs
+    non_external_rows = df.loc[~df.index.get_level_values("Plate").str.contains("external")]
+    
+    # take tail
+    non_external_rows = non_external_rows.tail(num_rows)
+    
+    # take tail of external rows (cut off until timestamp of first row of non_external_rows)
+    external_rows = external_rows.loc[external_rows["timestamp"] >= non_external_rows.iloc[0]["timestamp"]]
+    
+    return non_external_rows, external_rows
 
 
 def graphs_tables_callbacks(app):
@@ -273,11 +305,12 @@ def graphs_tables_callbacks(app):
             State("graph-tabs", "active_tab"),
             State("graph-tabs-2", "active_tab"),
             State("initial-load", "children"),
+            State("graph-object-temperature-external-probes", "value"),
         ],
         prevent_initial_call=True,
     )
     def update_components_from_store(
-        n, n_clicks, n_clicks_2, active_tab, active_tab_2, is_app_loaded
+        n, n_clicks, n_clicks_2, active_tab, active_tab_2, is_app_loaded, object_temp_external_probes
     ):
 
         # notify the spinner that the app has loaded and is ready for display
@@ -357,8 +390,10 @@ def graphs_tables_callbacks(app):
             _convert_timestamps(df_all)
 
             # update main temperature graph
+            df, df_external = tail_and_external(df_all, MAX_DP_OBJECT_TEMP, object_temp_external_probes)
             graph_object_temp = update_graph_object_temperature(
-                tail_exclude_external(df_all, MAX_DP_OBJECT_TEMP),
+                df=df,
+                df_external=df_external,
                 fig_id="graph-object-temperature",
             )
 
