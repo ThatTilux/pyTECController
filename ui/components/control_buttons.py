@@ -82,7 +82,7 @@ def control_sequence_buttons():
                             ),
                         ]
                     ),
-                    width={"size": 4},
+                    width="auto"
                 ),
                 dbc.Popover(
                     "This only pauses the graphs, not the Sequence, data logging or the table below.",
