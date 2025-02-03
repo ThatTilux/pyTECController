@@ -24,9 +24,6 @@ class TECController(object):
     # (we need 2 instances of this class per port but only 1 session)
     _sessions = {}
 
-    # number of successive times that the get_data function timed out
-    _num_timeout_get_data = 0
-
     # allow the get_data function to timeout this many times before closing the connection
     _num_timeout_limit = 60
 
@@ -90,24 +87,16 @@ class TECController(object):
                 data.update({description: value})
                 self._num_timeout_get_data = 0
 
-            except ResponseException as ex:
-                # TEC is offline and may currently be restarting.
+            except (ResponseException) as ex:
+                # TEC is offline (e.g., encountered an error) and may currently be restarting.
                 # Instead of stopping the session, throw exception to be handled.
-                # Only do this n times
-                self._num_timeout_get_data += 1
-
-                if self._num_timeout_get_data >= self._num_timeout_limit:
-                    # close connection
-                    self.session().stop()
-                    self._session = None
-                    raise RuntimeError
-
-                # throw exception to be handled
                 raise ex
 
-            except WrongChecksum as ex:
+            except (WrongChecksum, SerialException) as ex:
+                # unrecoverable errors
                 self.session().stop()
                 self._session = None
+                raise ex
         return data
 
     def _set_params(self):
@@ -130,10 +119,10 @@ class TECController(object):
                 logging.error("ERROR in setting parameter limits. Aborting.")
                 self.session().stop()
                 self._session = None
-                
+
         # if this is channel 1, set the delay till restart
         if self.channel == 1:
-            self.set_delay_till_restart(5.0) # 5s
+            self.set_delay_till_restart(5.0)  # 5s
 
     def set_static_mode(self):
         """
@@ -216,14 +205,14 @@ class TECController(object):
             address=self.address,
             parameter_instance=self.channel,
         )
-        
+
     def set_individual_source(self):
         """
         Sets the source selection to the corresponding channel.
         """
         # 0 is CH1 sensor, 2 is CH2 sensor
         value = 0 if self.channel == 1 else 2
-        
+
         return self.session().set_parameter(
             parameter_id=6300,
             value=value,
