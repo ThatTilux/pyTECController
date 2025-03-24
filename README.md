@@ -10,7 +10,7 @@ The 4 PID control boards need to be connected to the device running this softwar
 For the TECs, the ETX11-12-F1-4040-TA-RT-W6 model is used. For the PID control boards, the TEC-1161-10A-PT100-PIN model is used.
 
 ## Features
-This application has features two modes of controlling the TECs:
+This application features two modes of controlling the TECs:
 1. **Temperature Control Mode**
       - Users can manually set a target temperature for each plate independently.
 2. **Sequence Mode**
@@ -37,7 +37,7 @@ Determine the serial ports assigned to each of the four PID control boards. This
 2. Open the `Device Manager` on Windows and head to the section `Ports (COM & LPT)`. The four connected control boards should appear as `USB Serial Port (COMX)`, where X is the assigned port number.
 3. Identify each board's serial port by disconnecting and reconnecting them one by one, if necessary.
 
-Create a file named `serial_ports.py` file in the `app` directory. Fill in the code below, replacing `COMX` with the respective serial port.
+Create a file named `serial_ports.py` in the `app` directory. Fill in the code below, replacing `COMX` with the respective serial port.
 Assign the serial ports for the top control boards to `TOP_1` and `TOP_2` and the bottom ones for `BOTTOM_1` and `BOTTOM_2`.
 If you have an additional control board for external sensors, set its serial port under "OPTIONAL_EXTERNAL". If not, remove the line or leave it blank. External boards are those that only read temperatures and do not control TECs.
 ```
@@ -128,6 +128,8 @@ This configuration allows you to debug in VSCode by simultaneously starting both
    ```
 
 ## User Interface
+The following images are a few excerpts from the pyTECController UI.
+
 <img width="800" alt="UI Preview 1" src="https://github.com/user-attachments/assets/2d1dd8d3-e35e-4dff-bdd3-1065a6195882">
 <img width="800" alt="UI Preview 2" src="https://github.com/user-attachments/assets/3f274e06-a3ec-4381-ad48-fb0c2b8adf4f">
 <img width="800" alt="UI Preview 3" src="https://github.com/user-attachments/assets/ec9104ed-1988-4030-8570-47fab6ec4fed">
@@ -138,6 +140,7 @@ This configuration allows you to debug in VSCode by simultaneously starting both
 
 
 ## Author
-**Ole Kuhlmann**
-- GitHub: [ThatTilux](https://github.com/ThatTilux)
-- Email: tim.ole.kuhlmann@cern.ch
+
+Ole Kuhlmann  
+Email: [ole.kuhlmann@rwth-aachen.de](mailto:ole.kuhlmann@rwth-aachen.de)  
+GitHub: [ThatTilux](https://github.com/ThatTilux)
